@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../static/transparent.svg" type="image/svg+xml">
+    <title>Материалы</title>
+    <link rel="stylesheet" href="../static/css_/base.css">
+    <link rel="stylesheet" href="../static/css_/buttons.css">
+    <link rel="stylesheet" href="../static/css_/forms.css">
+    <link rel="stylesheet" href="../static/css_/cards.css">
+    <link rel="stylesheet" href="../static/css_/pages.css">
+    <link rel="stylesheet" href="../static/css_/materials-page.css">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="materials-page">
+        <div class="materials-scroll-area">
+            <div class="materials-max-width">
+
+                <!-- Page Header -->
+                <div class="materials-page-header">
+                    <div class="materials-header-left">
+                        <div class="materials-header-top">
+                            <button class="btn-home-materials" onclick="goHome()" title="Home">
+                                <svg width="16" height="16" fill="none" viewBox="0 0 20 20">
+                                    <path d="M3 10l7-7 7 7M5 8.5V16a1 1 0 001 1h3v-4h2v4h3a1 1 0 001-1V8.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <h1 class="materials-page-title">Материалы</h1>
+                        </div>
+
+                        <!-- Level Filter -->
+                        <div class="level-filter materials-level-filter">
+                            <button class="level-btn active" data-level="all" onclick="toggleFilter('level', 'all')">Все</button>
+                            <button class="level-btn" data-level="Any" onclick="toggleFilter('level', 'Any')">Any</button>
+                            <button class="level-btn" data-level="Beginner" onclick="toggleFilter('level', 'Beginner')">Beginner</button>
+                            <button class="level-btn" data-level="Elementary" onclick="toggleFilter('level', 'Elementary')">Elementary</button>
+                            <button class="level-btn" data-level="Pre-Intermediate" onclick="toggleFilter('level', 'Pre-Intermediate')">Pre-Int</button>
+                            <button class="level-btn" data-level="Intermediate" onclick="toggleFilter('level', 'Intermediate')">Intermediate</button>
+                            <button class="level-btn" data-level="Upper-Intermediate" onclick="toggleFilter('level', 'Upper-Intermediate')">Upper-Int</button>
+                            <button class="level-btn" data-level="Advanced" onclick="toggleFilter('level', 'Advanced')">Advanced</button>
+                        </div>
+                    </div>
+
+                    <div class="materials-header-right">
+                        <button class="materials-theme-btn" onclick="toggleTheme()" id="themeToggleBtn" title="Toggle theme">
+                            <svg id="themeIconSun" width="16" height="16" fill="none" viewBox="0 0 20 20" style="display:none">
+                                <circle cx="10" cy="10" r="3.5" stroke="currentColor" stroke-width="1.4"/>
+                                <path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M15.07 4.93l-1.41 1.41M6.34 13.66l-1.41 1.41" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                            </svg>
+                            <svg id="themeIconMoon" width="16" height="16" fill="none" viewBox="0 0 20 20">
+                                <path d="M17.293 13.293A8 8 0 0 1 6.707 2.707 8.003 8.003 0 1 0 17.293 13.293Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <button class="btn-add-material" onclick="openAddMaterialModal()">
+                            <svg width="14" height="14" fill="none" viewBox="0 0 16 16">
+                                <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <span>Добавить материал</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search & Tag Filter Row -->
+                <div class="materials-filter-row">
+                    <div class="materials-search-wrap">
+                        <svg class="materials-search-icon" width="15" height="15" fill="none" viewBox="0 0 20 20">
+                            <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.4"/>
+                            <path d="M13 13l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                        </svg>
+                        <input
+                            type="text"
+                            class="materials-search-input"
+                            id="searchInput"
+                            placeholder="Поиск по названию или содержанию..."
+                            oninput="searchMaterials()"
+                        >
+                        <button
+                            type="button"
+                            class="materials-search-clear"
+                            id="searchClearBtn"
+                            onclick="clearSearchQuery()"
+                            aria-label="Очистить поиск"
+                            title="Очистить поиск"
+                        >
+                            ×
+                        </button>
+                    </div>
+
+                    <div class="materials-tag-filter">
+                        <div class="tag-input-wrapper">
+                            <input
+                                type="text"
+                                class="materials-tag-input"
+                                id="tagSearchInput"
+                                placeholder="Фильтр по тегам..."
+                                oninput="filterAvailableTags()"
+                                onfocus="showTagDropdown()"
+                            >
+                            <div class="tag-dropdown" id="tagDropdown"></div>
+                        </div>
+                        <div class="materials-selected-tags" id="selectedTags">
+                            <!-- Selected tags appear here -->
+                        </div>
+                        <button class="btn-clear-filters" id="clearFiltersBtn" onclick="clearAllFilters()" style="display:none">Очистить</button>
+                    </div>
+                </div>
+
+                <!-- Materials Grid -->
+                <div class="materials-grid" id="materialsGrid">
+                    <!-- Materials rendered here -->
+                </div>
+
+                <div class="materials-bottom-spacing"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Material Modal -->
+    <div class="modal" id="addMaterialModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="modalTitle">Добавить материал</h3>
+                <button class="btn-close" onclick="closeAddMaterialModal()">
+                    <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <form onsubmit="saveMaterial(event)">
+                <div class="form-group">
+                    <label class="form-label">Название материала</label>
+                    <input type="text" class="form-input" id="materialName" required placeholder="Например: Past Simple Exercise">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Уровень</label>
+                        <input type="hidden" id="materialLevel" value="Any">
+                        <div class="custom-select" data-target="materialLevel">
+                            <div class="custom-select-trigger">Any</div>
+                            <div class="custom-select-options">
+                                <div class="custom-select-option selected" data-value="Any">Any</div>
+                                <div class="custom-select-option" data-value="Beginner">Beginner</div>
+                                <div class="custom-select-option" data-value="Elementary">Elementary</div>
+                                <div class="custom-select-option" data-value="Pre-Intermediate">Pre-Intermediate</div>
+                                <div class="custom-select-option" data-value="Intermediate">Intermediate</div>
+                                <div class="custom-select-option" data-value="Upper-Intermediate">Upper-Intermediate</div>
+                                <div class="custom-select-option" data-value="Advanced">Advanced</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Дополнительные теги (через запятую)</label>
+                        <input type="text" class="form-input" id="materialTags" placeholder="grammar, verbs, beginner">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Содержание материала</label>
+                        <textarea class="form-textarea" id="materialContent" rows="10" required placeholder="Введите текст упражнения или материала..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Ответы</label>
+                        <textarea class="form-textarea" id="materialAnswers" rows="10" placeholder="Введите ответы..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Attachments Section -->
+                <div class="material-attachments-section">
+                    <label class="form-label">Вложения</label>
+
+                    <!-- Add link -->
+                    <div class="attachment-link-row">
+                        <div class="attachment-link-input-wrap">
+                            <svg class="attachment-link-icon" width="14" height="14" fill="none" viewBox="0 0 16 16">
+                                <path d="M6.5 9.5a3 3 0 0 0 4.24 0l2-2a3 3 0 0 0-4.24-4.24L7.5 4.25" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                                <path d="M9.5 6.5a3 3 0 0 0-4.24 0l-2 2a3 3 0 0 0 4.24 4.24L8.5 11.75" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                            </svg>
+                            <input type="text" class="form-input attachment-link-input" id="materialLinkInput" placeholder="Вставьте ссылку..." onkeydown="if(event.key==='Enter'){event.preventDefault();addPendingLink();}">
+                        </div>
+                        <button type="button" class="btn-secondary btn-add-link" onclick="addPendingLink()">Добавить</button>
+                    </div>
+
+                    <!-- File drop zone -->
+                    <div class="attachment-dropzone" id="materialDropzone"
+                         ondragover="event.preventDefault();this.classList.add('dragover')"
+                         ondragleave="this.classList.remove('dragover')"
+                         ondrop="handleMaterialFileDrop(event)"
+                         onclick="document.getElementById('materialFileInput').click()">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
+                            <path d="M10 13V3m0 0L6.5 6.5M10 3l3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M3 13v2.5A1.5 1.5 0 0 0 4.5 17h11a1.5 1.5 0 0 0 1.5-1.5V13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                        </svg>
+                        <span class="dropzone-text">Перетащите файлы или <span class="dropzone-link">выберите</span></span>
+                        <span class="dropzone-hint">PDF, DOCX, изображения, аудио</span>
+                    </div>
+                    <input type="file" id="materialFileInput" multiple accept=".pdf,.docx,image/*,audio/*" style="display:none" onchange="handleMaterialFileSelect(event)">
+
+                    <!-- Attached items list -->
+                    <div class="attachment-items-list" id="materialAttachmentsList"></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeAddMaterialModal()">Отмена</button>
+                    <button type="submit" class="btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Material Modal -->
+    <div class="modal" id="viewMaterialModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="viewMaterialTitle">Материал</h3>
+                <div class="modal-header-actions">
+                    <button class="btn-icon" onclick="editCurrentMaterial()" title="Редактировать">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                    <button class="btn-icon" onclick="deleteCurrentMaterial()" title="Удалить">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                    <button class="btn-close" onclick="closeModalUrl('material')">
+                        <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="material-view-content">
+                <div class="material-tags-display" id="viewMaterialTags"></div>
+                <div class="material-content-display" id="viewMaterialContent"></div>
+                <div class="material-attachments-display" id="viewMaterialAttachments"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../static/js/utils/api.js"></script>
+    <script src="../static/js/utils/dom.js"></script>
+    <script src="../static/js/utils/helpers.js"></script>
+    <script src="../static/js/utils/modalUrl.js"></script>
+    <script src="../static/js/components/modal.js"></script>
+    <script src="../static/js/pages/materials.js"></script>
+</body>
+</html>

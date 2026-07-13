@@ -1,0 +1,750 @@
+/* ========================================
+   MATERIALS PAGE - Redesigned styles
+   ======================================== */
+
+/* ========== PAGE LAYOUT ========== */
+.materials-page {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    font-family: var(--font-sans);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+}
+
+.materials-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.materials-max-width {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 36px;
+}
+
+/* ========== PAGE HEADER ========== */
+.materials-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-top: 40px;
+    margin-bottom: 20px;
+    gap: 16px;
+    animation: mfadeUp 0.4s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.materials-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+}
+
+.materials-header-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.materials-page-title {
+    font-family: var(--font-serif-display);
+    font-size: 28px;
+    font-weight: 400;
+    margin: 0;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.materials-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    padding-top: 4px;
+}
+
+/* ========== HOME BUTTON ========== */
+.btn-home-materials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-home-materials:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--text-tertiary);
+}
+
+/* ========== THEME TOGGLE ========== */
+.materials-theme-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 0px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.materials-theme-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* ========== LEVEL FILTER ========== */
+.materials-level-filter {
+    flex-wrap: wrap;
+}
+
+/* ========== ADD BUTTON ========== */
+.btn-add-material {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    background: var(--accent-primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 500;
+    font-family: inherit;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--accent-primary) 30%, transparent);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-add-material:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-add-material:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* ========== FILTER ROW ========== */
+.materials-filter-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    animation: mfadeUp 0.4s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) 0.05s both;
+    position: relative;
+    z-index: 100;
+}
+
+/* ========== SEARCH ========== */
+.materials-search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+}
+
+.materials-search-icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    pointer-events: none;
+}
+
+.materials-search-input {
+    width: 100%;
+    padding: 9px 36px 9px 34px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+
+.materials-search-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.materials-search-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 10%, transparent);
+}
+
+.materials-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.materials-search-clear.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.materials-search-clear:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* ========== TAG FILTER ========== */
+.materials-tag-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tag-input-wrapper {
+    position: relative;
+    z-index: 200;
+}
+
+.materials-tag-input {
+    padding: 9px 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-family: inherit;
+    width: 180px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.materials-tag-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.materials-tag-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 10%, transparent);
+}
+
+/* ========== TAG DROPDOWN ========== */
+.tag-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 200px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+    max-height: 230px;
+    overflow-y: auto;
+}
+
+.tag-dropdown.active {
+    display: block;
+}
+
+.tag-dropdown-item {
+    padding: 9px 13px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.15s;
+}
+
+.tag-dropdown-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.tag-dropdown-item.tag-dropdown-add {
+    color: var(--accent-primary);
+    font-weight: 500;
+}
+
+.tag-dropdown-item.no-results {
+    color: var(--text-tertiary);
+    font-style: italic;
+    cursor: default;
+}
+
+.tag-count {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    background: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+/* ========== SELECTED TAGS ========== */
+.materials-selected-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.selected-tag {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, transparent);
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--accent-primary);
+    font-weight: 500;
+}
+
+.selected-tag button {
+    background: transparent;
+    border: none;
+    color: var(--accent-primary);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+}
+
+.selected-tag button:hover {
+    opacity: 1;
+}
+
+/* ========== CLEAR FILTERS BUTTON ========== */
+.btn-clear-filters {
+    padding: 5px 12px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-clear-filters:hover {
+    border-color: var(--text-tertiary);
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+}
+
+/* ========== MATERIALS GRID ========== */
+.materials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 16px;
+    animation: mfadeUp 0.4s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) 0.1s both;
+}
+
+/* ========== MATERIAL CARD OVERRIDES ========== */
+.material-card {
+    animation: mfadeUp 0.35s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+    z-index: 0;
+}
+
+.material-name {
+    font-family: var(--font-serif-body);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+/* ========== BTN MATERIAL ACTIONS ========== */
+.btn-material-action {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-tertiary);
+    transition: all 0.15s;
+}
+
+.btn-material-action:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.btn-material-action.delete:hover {
+    background: color-mix(in srgb, var(--red, #ef4444) 15%, transparent);
+    color: var(--red, #ef4444);
+}
+
+/* ========== MODAL OVERRIDES ========== */
+.modal-content.large {
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* ========== MATERIAL TAG - LEVEL ANY ========== */
+.material-tag.level-any {
+    background: #8d3881;
+    color: white;
+}
+
+/* ========== VIEW MATERIAL ========== */
+.material-view-content {
+    margin-top: 20px;
+}
+
+.view-section {
+    margin-bottom: 24px;
+}
+
+.view-section:last-child {
+    margin-bottom: 0;
+}
+
+.view-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.view-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.view-section-content {
+    font-size: 14.5px;
+    line-height: 1.8;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    padding: 14px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+}
+
+.btn-copy-section {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+}
+
+.btn-copy-section:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* ========== EMPTY STATE ========== */
+.materials-grid .empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    color: var(--text-tertiary);
+    text-align: center;
+}
+
+.empty-state-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+/* ========== ATTACHMENTS SECTION (Add/Edit Modal) ========== */
+.material-attachments-section {
+    padding: 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.material-attachments-section .form-label {
+    margin-bottom: 12px;
+}
+
+.attachment-link-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.attachment-link-input-wrap {
+    position: relative;
+    flex: 1;
+}
+
+.attachment-link-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    pointer-events: none;
+}
+
+.attachment-link-input {
+    padding-left: 34px !important;
+    font-size: 13px !important;
+}
+
+.btn-add-link {
+    padding: 0 16px;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.attachment-dropzone {
+    border: 1.5px dashed var(--border-color);
+    border-radius: 10px;
+    padding: 18px 16px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    color: var(--text-tertiary);
+}
+
+.attachment-dropzone:hover {
+    border-color: var(--text-tertiary);
+}
+
+.attachment-dropzone.dragover {
+    border-color: var(--accent-primary);
+    background: color-mix(in srgb, var(--accent-primary) 5%, transparent);
+}
+
+.dropzone-text {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    font-family: var(--font-serif-body);
+    font-style: italic;
+}
+
+.dropzone-link {
+    color: var(--accent-primary);
+    font-weight: 500;
+}
+
+.dropzone-hint {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    opacity: 0.6;
+}
+
+.attachment-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.attachment-items-list:empty {
+    margin-top: 0;
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.attachment-item-icon {
+    display: flex;
+    flex-shrink: 0;
+}
+
+.attachment-item-name {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attachment-item-name.link-name {
+    color: var(--link-color, #2E7DB8);
+}
+
+.attachment-item-size {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+}
+
+.attachment-item-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    font-size: 16px;
+    padding: 2px;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.attachment-item-remove:hover {
+    color: var(--text-primary);
+}
+
+/* ========== ATTACHMENTS (View Modal) ========== */
+.view-attachments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.view-attachment-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+    text-decoration: none;
+}
+
+.view-attachment-item:hover {
+    background: var(--bg-secondary);
+}
+
+.view-attachment-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    flex-shrink: 0;
+    border: 1px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.view-attachment-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.view-attachment-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.view-attachment-name.link-name {
+    color: var(--link-color, #2E7DB8);
+}
+
+.view-attachment-meta {
+    font-size: 11.5px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.view-attachment-external {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+}
+
+.view-attachment-play {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    border: 1px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: transparent;
+    transition: opacity 0.15s;
+}
+
+.view-attachment-play:hover {
+    opacity: 0.8;
+}
+
+/* ========== BOTTOM SPACING ========== */
+.materials-bottom-spacing {
+    height: 60px;
+}
+
+/* ========== ANIMATION ========== */
+@keyframes mfadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

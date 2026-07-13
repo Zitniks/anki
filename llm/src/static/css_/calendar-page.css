@@ -1,0 +1,842 @@
+/* ========================================
+   CALENDAR PAGE - Google Calendar-like layout
+   ======================================== */
+
+/* ========== CALENDAR WRAPPER ========== */
+.calendar-wrapper {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ========== CALENDAR HEADER ========== */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    gap: 16px;
+}
+
+.calendar-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.calendar-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-calendar-home {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-calendar-home:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+}
+
+.btn-calendar-today {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-calendar-today:hover {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.btn-calendar-nav {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    color: var(--text-primary);
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+}
+
+.btn-calendar-nav:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.calendar-current-period {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+/* ========== VIEW TOGGLE ========== */
+.calendar-view-toggle {
+    display: flex;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 3px;
+    border: 1px solid var(--border-color);
+}
+
+.view-btn {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.view-btn:hover {
+    color: var(--text-primary);
+}
+
+.view-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    font-weight: 600;
+}
+
+/* ========== CALENDAR BODY ========== */
+.calendar-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========== WEEK VIEW - DAY HEADERS ========== */
+.calendar-week-header {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    overflow: hidden;
+    scrollbar-gutter: stable;
+}
+
+.calendar-time-header {
+    border-right: 1px solid var(--border-color);
+}
+
+.calendar-day-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 4px;
+    border-right: 1px solid var(--border-color);
+    gap: 2px;
+}
+
+.calendar-day-header:last-child {
+    border-right: none;
+}
+
+.day-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.day-number {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.calendar-day-header.today .day-name {
+    color: var(--accent-primary);
+}
+
+.today-number {
+    background: var(--accent-primary);
+    color: white;
+}
+
+/* ========== WEEK VIEW - SCROLLABLE GRID ========== */
+.calendar-grid-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    position: relative;
+    min-height: 900px; /* 15 hours * 60px */
+}
+
+/* ========== TIME COLUMN ========== */
+.calendar-time-column {
+    position: relative;
+    border-right: 1px solid var(--border-color);
+}
+
+.calendar-time-label {
+    position: absolute;
+    width: 100%;
+    text-align: right;
+    padding-right: 8px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    transform: translateY(-7px);
+    line-height: 1;
+}
+
+/* ========== DAY COLUMNS ========== */
+.calendar-day-column {
+    position: relative;
+    border-right: 1px solid var(--border-color);
+    cursor: crosshair;
+}
+
+.calendar-day-column:last-child {
+    border-right: none;
+}
+
+.today-column {
+    background: rgba(102, 179, 186, 0.03);
+}
+
+/* ========== HOUR LINES ========== */
+.calendar-hour-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 1px solid var(--border-color);
+}
+
+/* ========== CURRENT TIME INDICATOR ========== */
+.calendar-now-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--red);
+    z-index: 5;
+    pointer-events: none;
+}
+
+.calendar-now-line::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--red);
+}
+
+/* ========== LESSON EVENT TILES ========== */
+.calendar-event {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: white;
+    overflow: hidden;
+    cursor: pointer;
+    border-left: 3px solid;
+    z-index: 2;
+    transition: box-shadow 0.2s, transform 0.1s;
+}
+
+.calendar-event:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transform: scale(1.02);
+    z-index: 3;
+}
+
+.calendar-event-title {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.calendar-event-time {
+    font-size: 11px;
+    opacity: 0.85;
+    line-height: 1.3;
+}
+
+/* ========== EVENT COLORS (pastel) ========== */
+.calendar-event.event-color-blue {
+    background: rgb(147, 181, 227);
+    border-left-color: #93B5E3;
+}
+
+.calendar-event.event-color-green {
+    background: rgb(134, 206, 172);
+    border-left-color: #86CEAC;
+}
+
+.calendar-event.event-color-pink {
+    background: rgb(224, 160, 192);
+    border-left-color: #E0A0C0;
+}
+
+.calendar-month-event.event-color-blue {
+    background: rgba(147, 181, 227, 0.85);
+}
+
+.calendar-month-event.event-color-green {
+    background: rgba(134, 206, 172, 0.85);
+}
+
+.calendar-month-event.event-color-pink {
+    background: rgba(224, 160, 192, 0.85);
+}
+
+/* ========== COLOR PICKER (booking modal) ========== */
+.color-picker-row {
+    display: flex;
+    gap: 8px;
+}
+
+.color-pick-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.color-pick-btn:hover {
+    border-color: var(--text-secondary);
+}
+
+.color-pick-btn.active {
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+}
+
+.color-pick-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+}
+
+.color-swatch-blue { background: #93B5E3; }
+.color-swatch-green { background: #86CEAC; }
+.color-swatch-pink { background: #E0A0C0; }
+
+/* ========== RECURRING ICON ========== */
+.recurring-icon {
+    font-size: 11px;
+    opacity: 0.8;
+    margin-right: 3px;
+}
+
+/* ========== REPEAT LABEL ========== */
+.repeat-label {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 3px;
+    padding: 0 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-right: 3px;
+    vertical-align: middle;
+}
+
+/* ========== MONTH VIEW ========== */
+.calendar-month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    flex: 1;
+    overflow-y: auto;
+}
+
+.calendar-month-header-cell {
+    padding: 10px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+}
+
+.calendar-month-header-cell:last-child {
+    border-right: none;
+}
+
+.calendar-month-cell {
+    min-height: 120px;
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    padding: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.calendar-month-cell:nth-child(7n) {
+    border-right: none;
+}
+
+.calendar-month-cell:hover {
+    background: var(--bg-hover);
+}
+
+.calendar-month-cell.other-month {
+    opacity: 0.35;
+}
+
+.calendar-month-cell.today {
+    background: rgba(102, 179, 186, 0.05);
+}
+
+.calendar-month-date {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    padding: 4px 6px;
+    display: inline-block;
+}
+
+.today-date {
+    background: var(--accent-primary);
+    color: white;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.calendar-month-events {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+}
+
+.calendar-month-event {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.calendar-month-event:hover {
+    opacity: 0.85;
+}
+
+.calendar-month-more {
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 2px 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.calendar-month-more:hover {
+    color: var(--accent-primary);
+}
+
+/* ========== LESSON DETAIL MODAL ========== */
+.lesson-detail-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+}
+
+.lesson-detail-row {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+}
+
+.detail-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 80px;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.repeat-notice {
+    color: var(--orange);
+    font-weight: 600;
+}
+
+/* ========== FORM TEXTAREA FOR NOTES ========== */
+.form-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.form-textarea::placeholder {
+    color: var(--text-tertiary);
+}
+
+/* ========== MODAL OVERRIDES FOR CALENDAR ========== */
+#lessonDetailModal .modal-content,
+#bookLessonModal .modal-content {
+    max-width: 520px;
+    padding: 24px;
+}
+
+#bookLessonModal .modal-content {
+    max-width: 480px;
+}
+
+/* ========== RICH TEXT EDITOR ========== */
+
+/* Highlight colors */
+.highlight-green {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: var(--green);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.highlight-red {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: var(--red);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.highlight-orange {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: var(--orange);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.highlight-blue {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: var(--blue);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* Editor wrapper */
+.rich-text-editor-wrapper {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.rich-text-editor-wrapper:focus-within {
+    border-color: var(--accent-primary);
+}
+
+/* Toolbar */
+.rich-text-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.toolbar-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 6px 10px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    transition: all 0.15s ease;
+}
+
+.toolbar-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+.toolbar-btn:active {
+    background: var(--bg-primary);
+}
+
+.toolbar-btn strong,
+.toolbar-btn em,
+.toolbar-btn u {
+    font-weight: bold;
+    font-style: italic;
+    text-decoration: underline;
+    font-size: 14px;
+}
+
+.toolbar-separator {
+    width: 1px;
+    height: 20px;
+    background: var(--border-color);
+    margin: 0 4px;
+}
+
+/* Editor area */
+.rich-text-editor {
+    min-height: 200px;
+    max-height: 400px;
+    padding: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    position: relative;
+}
+
+.rich-text-editor[data-placeholder]:not(:focus):before {
+    content: attr(data-placeholder);
+    color: var(--text-tertiary);
+    pointer-events: none;
+    position: absolute;
+    top: 12px;
+    left: 12px;
+}
+
+.rich-text-editor:focus {
+    outline: none;
+}
+
+.rich-text-editor strong {
+    font-weight: bold;
+}
+
+.rich-text-editor em {
+    font-style: italic;
+}
+
+.rich-text-editor u {
+    text-decoration: underline;
+}
+
+.rich-text-editor .highlight-green,
+.rich-text-editor .highlight-red,
+.rich-text-editor .highlight-orange,
+.rich-text-editor .highlight-blue {
+    padding: 2px 4px;
+    border-radius: 3px;
+    display: inline;
+}
+
+/* ========== DRAG-TO-CREATE GHOST ========== */
+.cal-drag-ghost {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    background: var(--cal-drag-bg);
+    border: 2px dashed var(--cal-drag-border);
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dur-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cal-drag-text);
+    user-select: none;
+}
+
+/* ========== EVENT HOVER PREVIEW ========== */
+#ev-preview {
+    position: fixed;
+    z-index: 1000;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 14px;
+    width: 220px;
+    box-shadow: var(--cal-preview-shadow);
+    pointer-events: none;
+}
+
+.ev-preview-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.ev-preview-row {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
+}
+
+.ev-preview-hint {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 8px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 6px;
+}
+
+/* ========== DROP TARGET PLACEHOLDER ========== */
+.cal-drop-placeholder {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    background: var(--cal-drop-placeholder-bg);
+    border: 2px dashed var(--cal-drop-placeholder-border);
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 9;
+}
+
+/* ========== DRAG-TO-RESCHEDULE ========== */
+.cal-event-dragging {
+    opacity: 0.35;
+}
+
+.cal-event-clone {
+    position: fixed;
+    z-index: 999;
+    pointer-events: none;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 12px;
+    box-shadow: var(--cal-clone-shadow);
+    opacity: 0.9;
+}
+
+/* ========== RESCHEDULE CONFIRM STRIP ========== */
+.reschedule-confirm {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: var(--cal-confirm-shadow);
+    z-index: 500;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.reschedule-confirm .btn-sm-primary {
+    padding: 4px 10px;
+    border-radius: 5px;
+    background: var(--accent-primary);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.reschedule-confirm .btn-sm-ghost {
+    padding: 4px 10px;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    font-size: 12px;
+}

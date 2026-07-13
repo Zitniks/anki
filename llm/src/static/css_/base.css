@@ -1,0 +1,217 @@
+/* ========================================
+   BASE STYLES - Variables, Reset, Typography
+   Load this first in all pages
+   ======================================== */
+
+/* ========== RESET ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ========== CSS VARIABLES ========== */
+:root {
+    /* Background Colors (Dark - warm browns) */
+    --bg-primary: #1A1714;
+    --bg-secondary: #1F1C18;
+    --bg-tertiary: #282420;
+    --bg-hover: #332E28;
+
+    /* Text Colors (Dark) */
+    --text-primary: #E8E2D6;
+    --text-secondary: #B8AFA0;
+    --text-tertiary: #7D756A;
+
+    /* Accent Colors */
+    --accent: #332E28;
+    --accent-hover: #3D372F;
+    --accent-primary: #D4725E;
+    --accent-secondary: #D4725E;
+    --accent-warning: #DAA520;
+    --accent-warning-bg: rgba(218, 165, 32, 0.08);
+    --accent-warning-border: rgba(218, 165, 32, 0.25);
+    --accent-danger: #D94A4A;
+    --chat-user-link: color-mix(in srgb, var(--text-primary) 96%, transparent);
+    --chat-user-link-underline: color-mix(in srgb, var(--text-primary) 70%, transparent);
+    --chat-user-link-hover: var(--text-primary);
+
+    /* Status Colors */
+    --green: #10b981;
+    --orange: #f59e0b;
+    --blue: #3b82f6;
+    --gray: #6b7280;
+    --red: #ef4444;
+    --success: #6ee7b7;
+    --danger: #fca5a5;
+
+    /* Border & Shadow */
+    --border-color: #332E28;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+
+    /* Fonts */
+    --font-sans: 'Satoshi', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-serif-display: 'Instrument Serif', Georgia, serif;
+    --font-serif-body: 'Source Serif 4', Georgia, serif;
+
+    /* Input & Scrollbar */
+    --input-placeholder: #6B6358;
+    --scroll-thumb: #3D372F;
+    --scroll-hover: #4A4339;
+
+    /* Floating UI */
+    --float-btn-bg: #1F1C18DD;
+    --float-btn-shadow: 0 1px 8px #00000030;
+    --input-bar-bg: #1F1C18F2;
+    --input-shadow: 0 4px 24px #00000025, 0 1px 4px #00000020;
+    --input-focus-shadow: 0 0 0 4px #D4725E12, 0 4px 24px #00000030;
+    --send-idle-bg: #282420;
+
+    /* Calendar drag & preview */
+    --cal-drag-bg: rgba(212, 114, 94, 0.18);
+    --cal-drag-border: #D4725E;
+    --cal-drag-text: #D4725E;
+
+    /* Image collage */
+    --collage-more-overlay: rgba(26, 23, 20, 0.6);
+    --cal-drop-placeholder-bg: rgba(212, 114, 94, 0.12);
+    --cal-drop-placeholder-border: #D4725E;
+    --cal-preview-shadow: 0 8px 24px rgba(0,0,0,0.28);
+    --cal-clone-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    --cal-confirm-shadow: 0 4px 16px rgba(0,0,0,0.28);
+
+    /* Grain */
+    --grain-opacity: 0.018;
+
+    /* Easing */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Layout */
+    --sidebar-width: 272px;
+    --right-sidebar-width: 250px;
+    --collapsed-width: 50px;
+}
+
+/* ========== LIGHT THEME ========== */
+[data-theme="light"] {
+    --bg-primary: #F7F4ED;
+    --bg-secondary: #FFFDF8;
+    --bg-tertiary: #F2EEE5;
+    --bg-hover: #EDE9DF;
+
+    --text-primary: #1B2838;
+    --text-secondary: #3A4D5E;
+    --text-tertiary: #6B7D8D;
+
+    --accent: #E8E2D6;
+    --accent-hover: #DDD7CB;
+    --accent-primary: #C8553D;
+    --accent-secondary: #C8553D;
+    --chat-user-link: color-mix(in srgb, var(--text-primary) 96%, transparent);
+    --chat-user-link-underline: color-mix(in srgb, var(--text-primary) 70%, transparent);
+    --chat-user-link-hover: var(--text-primary);
+    --border-color: #E8E2D6;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+
+    --input-placeholder: #A09882;
+    --scroll-thumb: #D5CFBF;
+    --scroll-hover: #C0BAA8;
+
+    --collage-more-overlay: rgba(247, 244, 237, 0.7);
+
+    --float-btn-bg: #FFFDF8DD;
+    --float-btn-shadow: 0 1px 6px #1B283808;
+    --input-bar-bg: #FFFDF8F2;
+    --input-shadow: 0 4px 24px #1B283808, 0 1px 4px #1B283806;
+    --input-focus-shadow: 0 0 0 4px #C8553D08, 0 4px 24px #1B283810;
+    --send-idle-bg: #F2EEE5;
+
+    --grain-opacity: 0.012;
+
+    /* Calendar drag & preview */
+    --cal-drag-bg: rgba(200, 85, 61, 0.14);
+    --cal-drag-border: #C8553D;
+    --cal-drag-text: #C8553D;
+    --cal-drop-placeholder-bg: rgba(200, 85, 61, 0.10);
+    --cal-drop-placeholder-border: #C8553D;
+    --cal-preview-shadow: 0 8px 24px rgba(0,0,0,0.10);
+    --cal-clone-shadow: 0 6px 20px rgba(0,0,0,0.14);
+    --cal-confirm-shadow: 0 4px 16px rgba(0,0,0,0.10);
+}
+
+/* ========== BODY ========== */
+body {
+    font-family: var(--font-sans);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    transition: background 0.4s ease, color 0.4s ease;
+}
+
+/* ========== GRAIN OVERLAY ========== */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ========== SCROLLBAR ========== */
+::-webkit-scrollbar {
+    width: 7px;
+    height: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--scroll-thumb);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scroll-hover);
+}
+
+/* ========== LAYOUT CONTAINERS ========== */
+.container,
+.chat-container {
+    display: flex;
+    height: 100vh;
+}
+
+/* ========== PAGE LOAD ANIMATIONS ========== */
+@keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.left-sidebar  { animation: fade-up 0.4s var(--ease-out-expo) both; }
+.main-chat-area { animation: fade-up 0.4s var(--ease-out-expo) 0.05s both; }
+.right-sidebar  { animation: fade-up 0.4s var(--ease-out-expo) 0.1s both; }
+
+/* ========== UTILITY CLASSES ========== */
+.spacer {
+    flex: 1;
+}
+
+/* ========== GLOBAL INTERACTIVE STYLES ========== */
+button:hover {
+    opacity: 0.88;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+input::placeholder {
+    color: var(--input-placeholder) !important;
+    font-style: italic;
+}

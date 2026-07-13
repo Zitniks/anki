@@ -1,0 +1,13 @@
+.env
+*.env
+.git
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+tests/
+logs/
+uploads/
+backups/
+data/
+graphify-out/

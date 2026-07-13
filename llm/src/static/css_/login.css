@@ -1,0 +1,88 @@
+/* ========================================
+   LOGIN PAGE - Layout only
+   Relies on base.css, forms.css, buttons.css for colors and components
+   ======================================== */
+
+body {
+    overflow: auto; /* login page scrolls, unlike main app */
+}
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.login-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1);
+    animation: fade-up 0.35s var(--ease-out-expo) both;
+}
+
+.login-title {
+    font-size: 1.375rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+.login-subtitle {
+    color: var(--text-tertiary);
+    font-size: 0.875rem;
+    margin: 0 0 2rem 0;
+}
+
+.login-submit {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.7rem;
+    font-size: 0.9375rem;
+    background: var(--accent-primary);
+    border-radius: 10px;
+    color: #fff;
+    border: none;
+}
+
+.login-submit:hover {
+    opacity: 0.9;
+}
+
+.login-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.login-toggle {
+    text-align: center;
+    margin-top: 1.25rem;
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+}
+
+.login-toggle a {
+    color: var(--accent-primary);
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.login-toggle a:hover { text-decoration: underline; }
+
+.login-error {
+    background: color-mix(in srgb, var(--accent-danger) 15%, transparent);
+    border: 1px solid var(--accent-danger);
+    color: var(--red);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    display: none;
+}

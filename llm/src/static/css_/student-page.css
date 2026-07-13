@@ -1,0 +1,86 @@
+/* ========================================
+   STUDENT PAGE - Student and topics page specific styles
+   ======================================== */
+
+/* ========== SIDEBAR BUTTON ========== */
+.btn-lessons {
+    margin: 0 20px 20px 20px;
+    padding: 12px 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+}
+
+.btn-lessons:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.btn-lessons span:first-child {
+    font-size: 18px;
+}
+
+.left-sidebar.collapsed .btn-lessons {
+    /* margin: 12px auto;
+    padding: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center; */
+    display: none;
+}
+
+.left-sidebar.collapsed .btn-lessons span:not(:first-child) {
+    display: none;
+}
+
+/* ========== HIDE SIDEBAR TOGGLE — floating toggles replace it ========== */
+.left-sidebar .sidebar-header-actions .left-btn-icon-toggle[onclick*="toggleLeftSidebar"] {
+    display: none;
+}
+
+/* ========== TOPIC AND VOCABULARY SECTION ========== */
+.topic-and-vocabulary {
+    height: 70dvh;
+    overflow: hidden;
+}
+
+.info-list {
+    max-height: 80dvh;
+}
+
+/* ========== MODAL OVERRIDES FOR STUDENT PAGE ========== */
+.modal-content {
+    padding: 28px;
+    max-width: 420px;
+}
+
+/* ========== LEGACY --border VARIABLE SUPPORT ========== */
+.left-sidebar {
+    border-right: 1px solid var(--border-color);
+}
+
+.sidebar-header,
+.notes-section {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.notes-textarea {
+    border: 1px solid var(--border-color);
+}
+
+/* Override any legacy --border references */
+.btn-home {
+    border: 1px solid var(--border-color);
+}

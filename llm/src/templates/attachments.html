@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../static/transparent.svg" type="image/svg+xml">
+    <title>Attachments</title>
+    <link rel="stylesheet" href="../static/css_/base.css">
+    <link rel="stylesheet" href="../static/css_/buttons.css">
+    <link rel="stylesheet" href="../static/css_/forms.css">
+    <link rel="stylesheet" href="../static/css_/attachments-page.css">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="attachments-scroll-wrapper">
+    <div class="attachments-page">
+        <!-- Header -->
+        <div class="page-header">
+            <button class="btn-home" onclick="window.location.href='/'" title="Home">← Home</button>
+            <h1 class="page-title">Attachments</h1>
+            <button class="left-btn-icon-toggle" onclick="toggleTheme()" id="themeToggleBtn" title="Toggle theme">
+                <svg id="themeIconSun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <svg id="themeIconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Toolbar: search + filter tabs -->
+        <div class="toolbar">
+            <input
+                type="text"
+                id="searchInput"
+                class="search-input"
+                placeholder="Search by filename, student..."
+                oninput="onSearch()"
+            >
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">All</button>
+                <button class="filter-tab" data-filter="image" onclick="setFilter('image')">Images</button>
+                <button class="filter-tab" data-filter="document" onclick="setFilter('document')">Documents</button>
+            </div>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="stats-bar" id="statsBar">Loading...</div>
+
+        <!-- Grid -->
+        <div class="attachments-grid" id="attachmentsGrid">
+            <!-- Tiles rendered by JS -->
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-state hidden" id="emptyState">
+            <div class="empty-icon">📎</div>
+            <div class="empty-text">No attachments found</div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay hidden" id="detailModal" onclick="handleOverlayClick(event)">
+        <div class="modal-card" id="modalCard">
+            <button class="modal-close" onclick="closeModalUrl('file')">×</button>
+            <div class="modal-preview" id="modalPreview"></div>
+            <div class="modal-info" id="modalInfo"></div>
+            <div class="modal-actions">
+                <a id="modalDownload" class="btn-download" target="_blank">⬇ Download</a>
+                <a id="modalChatLink" class="btn-chat-link" target="_blank">Go to chat →</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../static/js/utils/api.js"></script>
+    <script src="../static/js/utils/dom.js"></script>
+    <script src="../static/js/utils/helpers.js"></script>
+    <script src="../static/js/utils/modalUrl.js"></script>
+    <script src="../static/js/components/sidebar.js"></script>
+    <script src="../static/js/pages/attachments.js"></script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!-- Shared Right Sidebar -->
+<div class="right-sidebar" id="rightSidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-header-top right-sidebar-header-actions-row">
+            <button class="left-btn-icon-toggle" onclick="toggleTheme()" id="themeToggleBtn" title="Toggle theme">
+                <svg id="themeIconSun" width="16" height="16" fill="none" viewBox="0 0 20 20" style="display:none">
+                    <circle cx="10" cy="10" r="3.5" stroke="currentColor" stroke-width="1.4"/>
+                    <path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M15.07 4.93l-1.41 1.41M6.34 13.66l-1.41 1.41" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+                <svg id="themeIconMoon" width="16" height="16" fill="none" viewBox="0 0 20 20">
+                    <path d="M17.293 13.293A8 8 0 0 1 6.707 2.707 8.003 8.003 0 1 0 17.293 13.293Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <span class="right-sidebar-header-spacer" aria-hidden="true"></span>
+            <button class="left-btn-icon-toggle" onclick="logout()" title="Log out">
+                <svg width="16" height="16" fill="none" viewBox="0 0 20 20">
+                    <path d="M13 3h3a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-3M9 14l4-4-4-4M13 10H4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    {% if right_sidebar_show_stats %}
+    <!-- Stats Section -->
+    <div class="sidebar-stats-section">
+        <div class="sidebar-stats-header">
+            <span class="sidebar-stats-title">Stats</span>
+        </div>
+        <div class="sidebar-stats-grid">
+            <div class="sidebar-stat-item" data-status="DONE" onclick="filterByStatus('DONE')">
+                <div class="sidebar-stat-value DONE" id="completedCount">0</div>
+                <div class="sidebar-stat-label">Пройдено</div>
+            </div>
+            <div class="sidebar-stat-item" data-status="REPEAT" onclick="filterByStatus('REPEAT')">
+                <div class="sidebar-stat-value REPEAT" id="reviewCount">0</div>
+                <div class="sidebar-stat-label">Повторить</div>
+            </div>
+            <div class="sidebar-stat-item" data-status="KNOWN" onclick="filterByStatus('KNOWN')">
+                <div class="sidebar-stat-value KNOWN" id="knownCount">0</div>
+                <div class="sidebar-stat-label">Знает</div>
+            </div>
+            <div class="sidebar-stat-item" data-status="NOT_STARTED" onclick="filterByStatus('NOT_STARTED')">
+                <div class="sidebar-stat-value NOT_STARTED" id="notStartedCount">0</div>
+                <div class="sidebar-stat-label">Не начата</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Vocabulary & Grammar -->
+    <div class="sidebar-content-section">
+        <div class="info-section">
+            <div class="section-header" onclick="toggleSection('vocabulary', collapsedSections)">
+                <h4>Vocabulary</h4>
+                <div class="section-toggle">
+                    <button class="btn-add" onclick="event.stopPropagation(); addVocabulary()">+</button>
+                </div>
+            </div>
+            <div class="info-list" id="vocabularyList">
+                <div class="info-item empty">No words yet</div>
+            </div>
+        </div>
+    </div>
+</div>

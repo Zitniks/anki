@@ -1,0 +1,451 @@
+/* ========================================
+   BUTTONS - All button styles and variations
+   ======================================== */
+
+/* ========== PRIMARY BUTTONS ========== */
+.btn-primary {
+    padding: 10px 16px;
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+}
+
+/* ========== SECONDARY BUTTONS ========== */
+.btn-secondary {
+    padding: 10px 16px;
+    background: var(--accent);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background: var(--bg-hover);
+}
+
+/* ========== ACTION BUTTONS ========== */
+.btn-new-chat,
+.btn-new-project {
+    padding: 10px 14px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-new-chat {
+    margin: 16px;
+}
+
+.btn-new-project {
+    width: 100%;
+}
+
+.btn-new-chat:hover,
+.btn-new-project:hover {
+    background: var(--bg-tertiary);
+}
+
+.btn-new-project span {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* ========== ACCENT BUTTONS ========== */
+.btn-new-student,
+.btn-add-material,
+.btn-add-topic {
+    padding: 16px 32px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--accent-primary) 30%, transparent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-add-material,
+.btn-add-topic {
+    padding: 10px 18px;
+    border-radius: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--accent-primary) 30%, transparent);
+}
+
+.btn-new-student:hover,
+.btn-add-material:hover,
+.btn-add-topic:hover {
+    background: var(--accent-secondary);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--accent-primary) 40%, transparent);
+}
+
+.btn-new-student-top {
+    padding: 8px 14px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--accent-primary) 30%, transparent);
+}
+
+.btn-new-student-top:hover {
+    background: var(--accent-secondary);
+    color: var(--bg-primary);
+}
+
+/* ========== ICON BUTTONS ========== */
+.btn-icon {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.btn-icon:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* ========== SMALL BUTTONS ========== */
+.btn-add-chat {
+    width: 24px;
+    height: 24px;
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: 4px;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 24px;
+}
+
+.btn-add-chat:hover {
+    background: var(--accent);
+}
+
+/* ========== UTILITY BUTTONS ========== */
+.btn-close {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+}
+
+.btn-close:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.btn-send {
+    padding: 10px 12px;
+    background: var(--send-idle-bg);
+    border: none;
+    border-radius: 12px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.btn-send.has-content {
+    background: var(--accent-primary);
+    color: #FFF;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--accent-primary) 35%, transparent);
+}
+
+.btn-send:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-copy,
+.copy-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.15s;
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-copy {
+    padding: 2px 6px;
+}
+
+.btn-copy:hover,
+.copy-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.copy-btn:hover {
+    background: var(--bg-secondary);
+    border-radius: 6px;
+}
+
+.btn-copy:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.btn-copy-section {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-copy-section:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.btn-save-notes {
+    padding: 6px 12px;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s;
+}
+
+.btn-save-notes.visible {
+    opacity: 1;
+}
+
+.btn-save-notes:hover {
+    background: var(--accent-primary);
+}
+
+.btn-clear-filters {
+    width: 100%;
+    padding: 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-clear-filters:hover {
+    background: var(--accent-danger);
+    color: white;
+    border-color: var(--accent-danger);
+}
+
+/* ========== MENU BUTTONS ========== */
+.menu-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: all 0.2s;
+}
+
+.menu-btn:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+/* ========== ACTION BUTTONS ON CARDS ========== */
+.btn-delete-topic,
+.btn-material-action {
+    padding: 0;
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-delete-topic {
+    opacity: 0;
+}
+
+.btn-delete-topic:hover {
+    background: color-mix(in srgb, var(--red) 15%, transparent);
+    color: var(--red);
+}
+
+.btn-material-action:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.btn-material-action:hover {
+    background: var(--accent);
+}
+
+.btn-material-action.delete:hover {
+    background: var(--accent-danger);
+}
+
+/* ========== STATUS BUTTONS ========== */
+.status-btn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0px solid var(--border-color);
+    border-radius: 7px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+    color: var(--text-tertiary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.4;
+}
+
+.status-btn:hover {
+    transform: scale(1.1);
+    opacity: 1;
+}
+
+.status-btn.DONE {
+    border-color: color-mix(in srgb, var(--green) 60%, transparent);
+    color: var(--green);
+    background: color-mix(in srgb, var(--green) 15%, transparent);
+    opacity: 1;
+}
+
+.status-btn.REPEAT {
+    border-color: color-mix(in srgb, var(--orange) 60%, transparent);
+    color: var(--orange);
+    background: color-mix(in srgb, var(--orange) 15%, transparent);
+    opacity: 1;
+}
+
+.status-btn.KNOWN {
+    border-color: color-mix(in srgb, var(--blue) 60%, transparent);
+    color: var(--blue);
+    background: color-mix(in srgb, var(--blue) 15%, transparent);
+    opacity: 1;
+}
+
+.status-btn.NOT_STARTED {
+    border-color: color-mix(in srgb, var(--gray) 60%, transparent);
+    color: var(--gray);
+    background: color-mix(in srgb, var(--gray) 15%, transparent);
+    opacity: 1;
+}
+
+/* ========== FILTER BUTTONS ========== */
+.filter-btn,
+.level-btn {
+    padding: 7px 16px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.filter-btn {
+    padding: 6px 12px;
+    background: var(--bg-tertiary);
+}
+
+.level-btn {
+    font-weight: 400;
+}
+
+.filter-btn:hover,
+.level-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.filter-btn.active,
+.level-btn.active {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    border-color: var(--text-primary);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}

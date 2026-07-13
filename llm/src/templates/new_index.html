@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../static/transparent.svg" type="image/svg+xml">
+    <title>Личный кабинет</title>
+    <link rel="stylesheet" href="../static/css_/base.css">
+    <link rel="stylesheet" href="../static/css_/sidebar.css">
+    <link rel="stylesheet" href="../static/css_/buttons.css">
+    <link rel="stylesheet" href="../static/css_/forms.css">
+    <link rel="stylesheet" href="../static/css_/cards.css">
+    <link rel="stylesheet" href="../static/css_/pages.css">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Bar -->
+    <header class="main-page-topbar">
+        <button class="left-btn-icon-toggle" onclick="toggleTheme()" id="themeToggleBtn" title="Toggle theme">
+            <svg id="themeIconSun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg id="themeIconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+        <button class="btn-new-student-top" onclick="openNewStudentModal()">+ new student</button>
+    </header>
+
+    <!-- Main Page -->
+    <div class="main-page" id="mainPage">
+        <h1 class="main-page-header"><span class="hello-italic">hello,</span> Kisa!</h1>
+
+        <div class="cat-gif-container">
+            <img
+                id="catGif"
+                src="https://cataas.com/cat/gif?timestamp=0"
+                alt="Random cat gif"
+                class="cat-gif"
+                onload="this.style.opacity = 1"
+            />
+        </div>
+
+        <div class="students-grid" id="studentsGrid"></div>
+
+        <div class="main-nav-buttons">
+            <button class="btn-main-nav" onclick="goCalendar()">calendar</button>
+            <button class="btn-main-nav" onclick="goMaterials()">materials</button>
+            <button class="btn-main-nav" onclick="goAttachments()">attachments</button>
+        </div>
+    </div>
+
+    <!-- Modal for New Student -->
+    <div class="modal" id="newStudentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>New Student</h3>
+                <button class="btn-close" onclick="closeNewStudentModal()">×</button>
+            </div>
+            <form onsubmit="createStudent(event)">
+                <div class="form-group">
+                    <label class="form-label">Project Name</label>
+                    <input type="text" class="form-input" id="projectName" required placeholder="e.g., English for Ivan">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Student Name</label>
+                    <input type="text" class="form-input" id="studentName" required placeholder="Ivan Ivanov">
+                </div>
+                <!-- <div class="form-group">
+                    <label class="form-label">Student Level</label>
+                    <input type="text" class="form-input" id="studentLevel" required placeholder="A1">
+                </div> -->
+                <div class="form-group">
+                    <label class="form-label">Student Level</label>
+                    <input type="hidden" id="studentLevel" value="Beginner">
+                    <div class="custom-select" data-target="studentLevel">
+                        <div class="custom-select-trigger">Beginner</div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option selected" data-value="Beginner">Beginner</div>
+                            <div class="custom-select-option" data-value="Elementary">Elementary</div>
+                            <div class="custom-select-option" data-value="Pre-Intermediate">Pre-Intermediate</div>
+                            <div class="custom-select-option" data-value="Intermediate">Intermediate</div>
+                            <div class="custom-select-option" data-value="Upper-Intermediate">Upper-Intermediate</div>
+                            <div class="custom-select-option" data-value="Advanced">Advanced</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-input" id="projectDescription" rows="3" placeholder="Level, learning goals, features..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-input" id="projectNotes" rows="3" placeholder="Notes about a student"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeNewStudentModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Edit Student -->
+    <div class="modal" id="editStudentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Student</h3>
+                <button class="btn-close" onclick="closeEditStudentModal()">×</button>
+            </div>
+            <form onsubmit="updateStudent(event)">
+                <div class="form-group">
+                    <label class="form-label">Project Name</label>
+                    <input type="text" class="form-input" id="editProjectName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Student Name</label>
+                    <input type="text" class="form-input" id="editStudentName" required>
+                </div>
+                <!-- <div class="form-group">
+                    <label class="form-label">Student Level</label>
+                    <input type="text" class="form-input" id="editStudentLevel" required>
+                </div> -->
+                <div class="form-group">
+                    <label class="form-label">Student Level</label>
+                    <input type="hidden" id="editStudentLevel" value="Beginner">
+                    <div class="custom-select" data-target="editStudentLevel">
+                        <div class="custom-select-trigger">Beginner</div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option selected" data-value="Beginner">Beginner</div>
+                            <div class="custom-select-option" data-value="Elementary">Elementary</div>
+                            <div class="custom-select-option" data-value="Pre-Intermediate">Pre-Intermediate</div>
+                            <div class="custom-select-option" data-value="Intermediate">Intermediate</div>
+                            <div class="custom-select-option" data-value="Upper-Intermediate">Upper-Intermediate</div>
+                            <div class="custom-select-option" data-value="Advanced">Advanced</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-input" id="editProjectDescription" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-input" id="editProjectNotes" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeEditStudentModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <!-- <script src="../static/js/new_index.js"></script> -->
+
+    <script src="../static/js/utils/api.js"></script>
+    <script src="../static/js/utils/dom.js"></script>
+    <script src="../static/js/utils/helpers.js"></script>
+    <script src="../static/js/components/modal.js"></script>
+    <script src="../static/js/components/sidebar.js"></script>
+    <script src="../static/js/components/topics.js"></script>
+    <script src="../static/js/components/vocabulary.js"></script>
+    <script src="../static/js/pages/index.js"></script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../static/transparent.svg" type="image/svg+xml">
+    <title>Chat</title>
+    <link rel="stylesheet" href="../static/css_/base.css">
+    <link rel="stylesheet" href="../static/css_/sidebar.css">
+    <link rel="stylesheet" href="../static/css_/buttons.css">
+    <link rel="stylesheet" href="../static/css_/forms.css">
+    <link rel="stylesheet" href="../static/css_/chat.css">
+    <link rel="stylesheet" href="../static/css_/chat-page.css">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Chat Page -->
+    <div class="chat-page" id="chatPage">
+        <div class="chat-container">
+            <!-- Left Sidebar -->
+            {% include 'partials/left_sidebar.html' %}
+
+            <!-- Main Chat Area -->
+            <div class="main-chat-area">
+                <!-- Floating sidebar toggles -->
+                <div class="float-toggle-left">
+                    <button class="float-toggle-btn" onclick="toggleLeftSidebar()" title="Toggle sidebar">
+                        <svg width="18" height="18" fill="none" viewBox="0 0 20 20">
+                            <rect x="2" y="3" width="16" height="14" rx="2.5" stroke="currentColor" stroke-width="1.3"/>
+                            <path d="M7.5 3v14" stroke="currentColor" stroke-width="1.3"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="float-toggle-right">
+                    <button class="float-toggle-btn" onclick="toggleRightSidebar()" title="Toggle panel">
+                        <svg width="18" height="18" fill="none" viewBox="0 0 20 20">
+                            <rect x="2" y="3" width="16" height="14" rx="2.5" stroke="currentColor" stroke-width="1.3"/>
+                            <path d="M12.5 3v14" stroke="currentColor" stroke-width="1.3"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="chat-welcome" id="chatWelcome">
+                    <h2 class="welcome-text">Start a new conversation</h2>
+                </div>
+
+                <div class="messages-area" id="messagesArea" style="display: none;"></div>
+
+                <div class="input-area">
+                    <div id="warningArea"></div>
+                    <button id="scrollToBottomBtn" class="scroll-to-bottom-btn" style="display:none" onclick="scrollToBottomClick()" title="Scroll to bottom">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <div class="input-wrapper">
+                        <button class="btn-attach" onclick="triggerFileUpload()" title="Attach file (images, PDF, DOCX)">
+                            <svg width="20" height="20" viewBox="0 -3.34 50 49.68" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+                                <path d="M36.025,19.506L20.202,35.329c-7.823,7.823-18.078-1.494-9.786-9.785c2.753-2.753,20.716-20.716,20.716-20.716c10.16-10.16,23.429,3.482,13.456,13.455c-3.363,3.364-20.716,20.715-20.716,20.715C10.519,52.351-6.795,35.974,7.025,22.154L22.849,6.331"/>
+                            </svg>
+                        </button>
+
+                        <!-- Hidden file input -->
+                        <input type="file" id="fileInput" accept="image/*,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,audio/*,.mp3,.wav,.m4a,.ogg,.flac" multiple style="display: none;" onchange="handleFileSelect(event)">
+
+                        <textarea
+                            id="messageInput"
+                            class="input-field"
+                            placeholder="Write a message to prepare the lesson..."
+                            rows="1"
+                            onkeydown="handleInputKeydown(event)"
+                            oninput="autoResize(this); updateSendButton()"
+                        ></textarea>
+                        <button id="chatSettingsBtn" class="btn-chat-settings" style="display:none" onclick="openChatSettings()" title="Chat settings">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-send" onclick="sendMessage()" id="sendBtn">
+                            <svg width="18" height="18" fill="none" viewBox="0 0 20 20">
+                                <path d="M3.105 9.553 16.895 3.11a.5.5 0 0 1 .669.669L11.22 17.568a.5.5 0 0 1-.932-.02L8.21 12.462a1 1 0 0 0-.672-.672L2.452 9.712a.5.5 0 0 1-.02-.932l.673.773Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Add image preview container above input wrapper -->
+                    <div class="image-preview-container" id="imagePreviewContainer"></div>
+                </div>
+            </div>
+
+            {% include 'partials/right_sidebar.html' %}
+        </div>
+    </div>
+
+    <!-- Modal for Adding Vocabulary -->
+    <div class="modal" id="addItemModal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3 id="addItemTitle">Add</h3>
+                <button class="btn-close" onclick="closeAddItemModal()">×</button>
+            </div>
+            <form onsubmit="submitAddItem(event)">
+                <div class="form-group">
+                    <input type="text" class="form-input" id="addItemInput" required placeholder="Enter text...">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeAddItemModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Chat Settings Modal -->
+    <div class="modal" id="chatSettingsModal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h3>Chat settings</h3>
+                <button class="btn-close" onclick="closeChatSettings()">×</button>
+            </div>
+            <div class="form-group" style="margin-top: 8px;">
+                <label class="toggle-label">
+                    <div class="toggle-label-text">
+                        <span>Use student description</span>
+                        <span class="toggle-label-hint">When off, the assistant won't see the student's description — useful for varied exercises.</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="includeDescriptionToggle" onchange="saveChatSettings(this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </label>
+            </div>
+            <div class="form-group" style="margin-top: 16px;">
+                <div class="toggle-label-text" style="margin-bottom: 8px;">
+                    <span>Assistant mode</span>
+                    <span class="toggle-label-hint">Changes the assistant's behaviour for this chat.</span>
+                </div>
+                <input type="hidden" id="systemPromptKeyInput">
+                <div class="custom-select" data-target="systemPromptKeyInput">
+                    <div class="custom-select-trigger">Default (tutor assistant)</div>
+                    <div class="custom-select-options" id="systemPromptOptions"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        const PROJECT_ID = window.location.pathname.split('/')[1];
+    </script>
+
+    <script src="../static/js/utils/api.js"></script>
+    <script src="../static/js/utils/dom.js"></script>
+    <script src="../static/js/utils/helpers.js"></script>
+    <script src="../static/js/utils/modalUrl.js"></script>
+    <script src="../static/js/components/modal.js"></script>
+    <script src="../static/js/components/sidebar.js"></script>
+    <script src="../static/js/components/vocabulary.js"></script>
+    <script src="../static/js/pages/chat.js"></script>
+</body>
+</html>

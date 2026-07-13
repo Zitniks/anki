@@ -1,0 +1,45 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+uploads/
+*.egg-info
+
+# IDE files
+.vscode/
+.idea/
+.DS_Store
+
+# Virtual environments
+.venv
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Caddy user credentials (keep this private!)
+users.caddy
+
+# Database files
+versions/
+backups/
+
+# Graphify generated output
+graphify-out/
+
+# Logs
+logs/
+*.log
+
+# claude
+.claude/
+
+# stray local file
+/Untitled

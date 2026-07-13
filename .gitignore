@@ -9,18 +9,18 @@
 *.db-wal
 
 # Landing (Vite/React)
-landing/node_modules/
-landing/dist/
+front/landing/node_modules/
+front/landing/dist/
 
 # Source content (docx) — kept out of git, only the generated JSON is served;
-# keep the docx locally if you re-run scripts/gen_book_json.py.
+# keep the docx locally if you re-run back/scripts/gen_book_json.py.
 *.docx
 
 # macOS
 .DS_Store
 
 # stray unreferenced screenshot
-landing/Снимок экрана*.png
+front/landing/Снимок экрана*.png
 
 # Editor
 .vscode/

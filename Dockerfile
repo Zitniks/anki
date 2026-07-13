@@ -3,9 +3,9 @@
 ########################################
 FROM node:22-bookworm-slim AS landing-build
 WORKDIR /src/landing
-COPY landing/package.json landing/package-lock.json ./
+COPY front/landing/package.json front/landing/package-lock.json ./
 RUN npm ci
-COPY landing/ ./
+COPY front/landing/ ./
 RUN npm run build
 
 ########################################
@@ -13,10 +13,10 @@ RUN npm run build
 ########################################
 FROM golang:1.25-bookworm AS go-build
 WORKDIR /src
-COPY go.mod go.sum ./
+COPY back/go.mod back/go.sum ./
 RUN go mod download
-COPY cmd/ ./cmd/
-COPY internal/ ./internal/
+COPY back/cmd/ ./cmd/
+COPY back/internal/ ./internal/
 RUN CGO_ENABLED=0 go build -o /out/server ./cmd/server
 # goose isn't a dependency of this module, so install it standalone (its own
 # module graph) rather than `go build`, which would try to fold it into go.mod.
@@ -33,9 +33,9 @@ WORKDIR /app
 COPY --from=go-build /out/server ./server
 COPY --from=go-build /out/goose ./goose
 COPY --from=landing-build /src/landing/dist ./landing/dist
-COPY web/ ./web/
-COPY migrations/ ./migrations/
-COPY theory_tenses.json word_topics.json book_norwood_builder.json ./
+COPY front/web/ ./web/
+COPY back/migrations/ ./migrations/
+COPY back/theory_tenses.json back/word_topics.json back/book_norwood_builder.json ./
 COPY docker-entrypoint.sh ./
 RUN chmod +x ./docker-entrypoint.sh ./server ./goose
 

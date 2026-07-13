@@ -1,0 +1,437 @@
+/* ========================================
+   CARDS - Student tiles, topic cards, material cards
+   ======================================== */
+
+/* ========== GRID LAYOUTS ========== */
+.students-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    width: 100%;
+    max-width: 960px;
+    margin-bottom: 24px;
+}
+
+.topics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    gap: 15px;
+    margin-top: 4px;
+}
+
+.materials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+/* ========== STUDENT TILES ========== */
+.student-tile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 11px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.student-tile:hover {
+    z-index: 10;
+    background: hsl(var(--student-hue, 0), 20%, 22%);
+    border-color: hsl(var(--student-hue, 0), 18%, 30%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .student-tile:hover {
+    background: hsl(var(--student-hue, 0), 25%, 92%);
+    border-color: hsl(var(--student-hue, 0), 20%, 84%);
+    box-shadow: 0 6px 20px rgba(27, 40, 56, 0.06);
+}
+
+.student-name {
+    font-family: var(--font-serif-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.student-tile:hover .menu-btn {
+    opacity: 0.6;
+}
+
+.student-description {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ========== TOPIC CARDS ========== */
+.topic-card {
+    background: var(--bg-secondary);
+    /* border: 1px solid var(--border-color); */
+    border-radius: 12px;
+    padding: 16px 16px 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.topic-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    border-color: color-mix(in srgb, var(--accent-primary) 30%, var(--border-color));
+}
+
+.topic-card.DONE {
+    /* border-color: color-mix(in srgb, var(--green) 35%, transparent); */
+    background: linear-gradient(145deg, color-mix(in srgb, var(--green) 12%, transparent), color-mix(in srgb, var(--green) 4%, transparent));
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--green) 20%, transparent), 0 1px 3px color-mix(in srgb, var(--green) 20%, transparent);
+}
+
+.topic-card.DONE:hover {
+    /* border-color: color-mix(in srgb, var(--green) 65%, transparent); */
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--green) 30%, transparent), 0 2px 6px color-mix(in srgb, var(--green) 30%, transparent);
+}
+
+.topic-card.REPEAT {
+    /* border-color: color-mix(in srgb, var(--orange) 35%, transparent); */
+    background: linear-gradient(145deg, color-mix(in srgb, var(--orange) 12%, transparent), color-mix(in srgb, var(--orange) 4%, transparent));
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--orange) 20%, transparent), 0 1px 3px color-mix(in srgb, var(--orange) 20%, transparent);
+}
+
+.topic-card.REPEAT:hover {
+    /* border-color: color-mix(in srgb, var(--orange) 65%, transparent); */
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--orange) 30%, transparent), 0 2px 6px color-mix(in srgb, var(--orange) 30%, transparent);
+}
+
+.topic-card.KNOWN {
+    /* border-color: color-mix(in srgb, var(--blue) 35%, transparent); */
+    background: linear-gradient(145deg, color-mix(in srgb, var(--blue) 12%, transparent), color-mix(in srgb, var(--blue) 4%, transparent));
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--blue) 20%, transparent), 0 1px 3px color-mix(in srgb, var(--blue) 20%, transparent);
+}
+
+.topic-card.KNOWN:hover {
+    /* border-color: color-mix(in srgb, var(--blue) 65%, transparent); */
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--blue) 30%, transparent), 0 2px 6px color-mix(in srgb, var(--blue) 30%, transparent);
+}
+
+.topic-card.NOT_STARTED {
+    /* border-color: var(--border-color); */
+    background: var(--bg-secondary);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.topic-card.NOT_STARTED:hover {
+    /* border-color: color-mix(in srgb, var(--gray) 50%, transparent); */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.topic-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 8px;
+}
+
+.topic-level {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    opacity: 0.85;
+}
+
+.topic-card.DONE .topic-level { color: var(--green); }
+.topic-card.REPEAT .topic-level { color: var(--orange); }
+.topic-card.KNOWN .topic-level { color: var(--blue); }
+
+.topic-status {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.topic-status.DONE {
+    background: var(--green);
+}
+
+.topic-status.REPEAT {
+    background: var(--orange);
+}
+
+.topic-status.KNOWN {
+    background: var(--blue);
+}
+
+.topic-status.NOT_STARTED {
+    background: var(--gray);
+}
+
+.topic-name {
+    font-family: var(--font-serif-body);
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.35;
+    margin-bottom: 0;
+    flex: 1;
+    color: var(--text-primary);
+}
+
+.topic-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 14px;
+}
+
+.topic-card:hover .btn-delete-topic {
+    opacity: 1;
+}
+
+/* ========== MATERIAL CARDS ========== */
+.material-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+}
+
+.material-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-primary);
+}
+
+.material-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: start;
+    margin-bottom: 12px;
+}
+
+.material-name {
+    font-size: 18px;
+    font-weight: 600;
+    flex: 1;
+    margin-bottom: 12px;
+}
+
+.material-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.material-card:hover .material-actions {
+    opacity: 1;
+}
+
+/* ========== TAGS ========== */
+.material-tags,
+.material-tags-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+}
+
+.material-tags-display {
+    gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.material-tag,
+.selected-tag {
+    padding: 4px 10px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.selected-tag {
+    background: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.selected-tag button {
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+}
+
+.material-tag.level {
+    color: white;
+    font-weight: 500;
+}
+
+.material-tag.level-beginner {
+    background: #8b5cf6;
+}
+
+.material-tag.level-elementary {
+    background: #d94a4a;
+}
+
+.material-tag.level-pre-intermediate {
+    background: #4580ff;
+}
+
+.material-tag.level-intermediate {
+    background: #59b165;
+}
+
+.material-tag.level-upper-intermediate {
+    background: #ff8c00;
+}
+
+.material-tag.level-advanced {
+    background: #08e6ffb7;
+}
+
+.material-tag.difficulty-easy {
+    background: var(--success);
+    color: var(--bg-primary);
+}
+
+.material-tag.difficulty-medium {
+    background: var(--accent-warning);
+    color: var(--bg-primary);
+}
+
+.material-tag.difficulty-hard {
+    background: var(--accent-danger);
+    color: white;
+}
+
+.material-tag.clickable {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.material-tag.clickable:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: scale(1.05);
+}
+
+/* ========== STATS CARDS ========== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    padding: 10px;
+}
+
+.stat-card {
+    background: var(--bg-tertiary);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    background: var(--bg-hover);
+}
+
+.stat-card.active {
+    border-color: var(--accent-primary);
+    background: var(--bg-hover);
+    box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+.stat-card.active.DONE {
+    border-color: var(--green);
+    box-shadow: 0 0 0 1px var(--green);
+}
+
+.stat-card.active.REPEAT {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 1px var(--orange);
+}
+
+.stat-card.active.KNOWN {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 1px var(--blue);
+}
+
+.stat-card.active.NOT_STARTED {
+    border-color: var(--gray);
+    box-shadow: 0 0 0 1px var(--gray);
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.stat-value.DONE {
+    color: var(--green);
+}
+
+.stat-value.REPEAT {
+    color: var(--orange);
+}
+
+.stat-value.KNOWN {
+    color: var(--blue);
+}
+
+.stat-value.NOT_STARTED {
+    color: var(--gray);
+}
+
+.stat-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+/* ========== MENU VISIBILITY ========== */
+.student-tile:hover .menu-btn,
+.chat-item:hover .menu-btn,
+.project-item:hover .menu-btn {
+    opacity: 1;
+}

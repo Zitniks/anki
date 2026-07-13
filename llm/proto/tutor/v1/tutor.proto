@@ -1,0 +1,164 @@
+syntax = "proto3";
+
+package tutor.v1;
+
+option go_package = "anki/internal/ai/pb;tutorpb";
+
+import "google/protobuf/empty.proto";
+
+// Credentials for service-to-service auth against repetitor user store.
+message Credentials {
+  string email = 1;
+  string password = 2;
+}
+
+// Resolved session: user + project + chat ids.
+message Session {
+  Credentials credentials = 1;
+  string project_id = 2;
+  string chat_id = 3;
+  string practice_chat_id = 4;
+}
+
+message EnsureSessionRequest {
+  Credentials credentials = 1;
+  string project_id = 2;
+  string chat_id = 3;
+  string practice_chat_id = 4;
+}
+
+message StatusResponse {
+  bool ready = 1;
+  string address = 2;
+  string project_id = 3;
+  string chat_id = 4;
+  string practice_chat_id = 5;
+  string error = 6;
+}
+
+message ChatRequest {
+  Session session = 1;
+  string message = 2;
+  bool use_practice_chat = 3;
+}
+
+message ChatEvent {
+  string type = 1;   // content | status | error | done
+  string content = 2;
+  string status = 3;
+  string error = 4;
+}
+
+message PracticeRequest {
+  Session session = 1;
+  repeated string words = 2;
+  string level = 3;
+}
+
+message PracticeQuestion {
+  string prompt = 1;
+  repeated string options = 2;
+  int32 correct_index = 3;
+  string explanation = 4;
+}
+
+message PracticeResponse {
+  repeated PracticeQuestion questions = 1;
+  string source = 2;
+  repeated string rag_sources = 3;
+}
+
+enum RagCorpus {
+  RAG_CORPUS_UNSPECIFIED = 0;
+  RAG_CORPUS_EXERCISE = 1;
+  RAG_CORPUS_EXAMPLE = 2;
+  RAG_CORPUS_EXPLANATION = 3;
+}
+
+message RagSearchRequest {
+  Session session = 1;
+  string query = 2;
+  RagCorpus corpus = 3;
+  int32 limit = 4;
+}
+
+message RagChunk {
+  string id = 1;
+  string title = 2;
+  string snippet = 3;
+  float score = 4;
+}
+
+message RagSearchResponse {
+  repeated RagChunk chunks = 1;
+  string context = 2;
+}
+
+message EnrichWordRequest {
+  Session session = 1;
+  string word = 2;
+  string level = 3;
+}
+
+message EnrichWordResponse {
+  string translation = 1;
+  string example = 2;
+  string transcription = 3;
+  string source = 4;   // rag | llm
+}
+
+message PublishEventRequest {
+  Session session = 1;
+  string word = 2;
+  bool correct = 3;
+  int32 response_time_ms = 4;
+  int32 attempts = 5;
+  string card_type = 6;
+  string difficulty = 7;
+}
+
+message PublishEventResponse {
+  bool accepted = 1;
+}
+
+message ExplainErrorRequest {
+  Session session = 1;
+  string word = 2;
+  string expected = 3;
+  string got = 4;
+  string sentence = 5;
+}
+
+message ExplainErrorResponse {
+  string explanation = 1;
+  string source = 2;   // rag | llm
+}
+
+message GetWeakTopicsRequest {
+  Session session = 1;
+  int32 limit = 2;
+}
+
+message WeakTopic {
+  string word = 1;
+  double p_know = 2;
+  double als = 3;
+}
+
+message GetWeakTopicsResponse {
+  repeated WeakTopic topics = 1;
+}
+
+// TutorService is implemented by adaptive-learning-repetitor.
+// Anki is the gRPC client.
+service TutorService {
+  rpc Health(google.protobuf.Empty) returns (StatusResponse);
+  rpc EnsureSession(EnsureSessionRequest) returns (StatusResponse);
+  rpc Chat(ChatRequest) returns (stream ChatEvent);
+  rpc GeneratePractice(PracticeRequest) returns (PracticeResponse);
+  rpc SearchRag(RagSearchRequest) returns (RagSearchResponse);
+  rpc EnrichWord(EnrichWordRequest) returns (EnrichWordResponse);
+  rpc PublishEvent(PublishEventRequest) returns (PublishEventResponse);
+  rpc ExplainError(ExplainErrorRequest) returns (ExplainErrorResponse);
+  rpc GetWeakTopics(GetWeakTopicsRequest) returns (GetWeakTopicsResponse);
+}
