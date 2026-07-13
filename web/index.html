@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anki Lite</title>
+    <script>
+      (function () {
+        var saved = localStorage.getItem("anki_theme");
+        var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<div class="app">
+    <header>
+        <div class="header-top">
+            <h1>Anki Lite</h1>
+            <div class="header-actions">
+                <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Переключить тему"></button>
+                <div id="profile-wrap" class="profile-wrap hidden">
+                    <button id="profile-toggle" type="button" class="profile-toggle" aria-label="Профиль">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="19" height="19">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </button>
+                    <div id="profile-menu" class="profile-menu hidden">
+                        <button id="profile-open-modal" type="button" class="profile-menu-item">Профиль</button>
+                        <button id="profile-stats-link" type="button" class="profile-menu-item">Статистика</button>
+                        <button id="logout-btn" type="button" class="profile-menu-item profile-menu-item-danger">Выйти</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <nav class="tabs">
+            <button data-screen="home" class="tab active">Главная</button>
+            <button data-screen="dictionary" class="tab">Словарь</button>
+            <button data-screen="add" class="tab">Добавить</button>
+            <button data-screen="training" class="tab">Тренировка</button>
+            <button data-screen="practice" class="tab">Практика</button>
+            <button data-screen="theory" class="tab">Теория</button>
+            <button data-screen="reading" class="tab">Чтение</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="screen-login" class="screen">
+            <div class="auth-card">
+                <div class="auth-brand">Anki Lite</div>
+                <h2>Вход</h2>
+                <form id="login-form">
+                    <label>Email<input id="login-email" name="email" type="email" required /></label>
+                    <label>Пароль<input id="login-password" name="password" type="password" required minlength="8" /></label>
+                    <div class="actions">
+                        <button type="submit" class="primary">Войти</button>
+                        <button id="register-btn" type="button">Зарегистрироваться</button>
+                    </div>
+                </form>
+                <div id="login-message" class="answer hidden"></div>
+            </div>
+        </section>
+
+        <section id="screen-placement" class="screen">
+            <div class="auth-card">
+                <div class="auth-brand">Anki Lite</div>
+                <h2>Определим ваш уровень английского</h2>
+                <p>12 коротких вопросов — займёт пару минут. Можно пропустить и пройти позже.</p>
+                <div id="placement-questions" class="placement-questions"></div>
+                <div class="actions">
+                    <button id="placement-submit" type="button" class="primary">Завершить</button>
+                    <button id="placement-skip" type="button">Пропустить</button>
+                </div>
+                <div id="placement-message" class="answer hidden"></div>
+            </div>
+        </section>
+
+        <section id="screen-home" class="screen active">
+            <h2>Обзор</h2>
+            <div class="cards">
+                <article class="card">
+                    <div class="label">Всего слов</div>
+                    <div id="home-total" class="value">0</div>
+                </article>
+                <article class="card">
+                    <div class="label">К повторению</div>
+                    <div id="home-due" class="value">0</div>
+                </article>
+            </div>
+            <button id="go-train" class="primary">Начать тренировку</button>
+        </section>
+
+        <section id="screen-dictionary" class="screen">
+            <h2>Словарь</h2>
+            <input id="search" type="text" placeholder="Поиск слова..." />
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Слово</th>
+                        <th>Перевод</th>
+                        <th>Транскрипция</th>
+                        <th>Дата</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody id="words-table"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="screen-add" class="screen">
+            <h2>Добавить слово</h2>
+            <div class="add-mode-tabs">
+                <button type="button" class="add-mode-tab active" data-add-mode="single">Одно слово</button>
+                <button type="button" class="add-mode-tab" data-add-mode="topics">По темам</button>
+            </div>
+
+            <div id="add-mode-single" class="add-mode-panel">
+                <form id="add-form">
+                    <label>Word<input name="word" required /></label>
+                    <button type="button" id="enrich-btn">✨ Заполнить через AI</button>
+                    <label>Translation<input name="translation" required /></label>
+                    <label>Example<input name="example" /></label>
+                    <label>Transcription<input name="transcription" /></label>
+                    <button type="submit" class="primary">Сохранить</button>
+                </form>
+            </div>
+
+            <div id="add-mode-topics" class="add-mode-panel hidden">
+                <div id="topic-list" class="topic-list"></div>
+
+                <div id="topic-detail" class="topic-detail hidden">
+                    <button id="topic-back" type="button" class="theory-back">← Все темы</button>
+                    <div class="topic-detail-header">
+                        <h3 id="topic-detail-title"></h3>
+                        <div class="topic-detail-actions">
+                            <button id="topic-select-all" type="button">Выбрать все</button>
+                            <button id="topic-select-none" type="button">Снять выбор</button>
+                        </div>
+                    </div>
+                    <div id="topic-words-grid" class="topic-words-grid"></div>
+                    <div class="topic-add-bar">
+                        <span id="topic-selected-count" class="topic-selected-count">Выбрано: 0</span>
+                        <button id="topic-add-selected" type="button" class="primary" disabled>Добавить выбранные</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="screen-training" class="screen">
+            <div id="train-setup" class="training-card train-setup hidden">
+                <div class="train-setup-label">Слов в раунде</div>
+                <select id="train-count">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="15" selected>15</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                </select>
+                <button id="train-start" class="primary train-start-btn" type="button">Начать</button>
+            </div>
+            <div id="training-card" class="training-card hidden">
+                <div id="train-session" class="session-progress"></div>
+                <div id="train-stage" class="label">Раунд 1 из 4</div>
+                <div id="train-word" class="word">Нет слов для повторения</div>
+                <div id="train-prompt" class="translation"></div>
+                <div id="typing-hint" class="typing-hint phrase-hint round2-hint hidden"></div>
+                <div id="train-example" class="example"></div>
+                <div class="actions">
+                    <button id="speak-btn">🔊 Повторить аудио</button>
+                </div>
+                <div id="train-options" class="options-grid"></div>
+                <div id="typing-block" class="typing-block writing-input-block hidden">
+                    <input id="typing-input" name="typing_input_nohistory" type="text" lang="en" placeholder="Введите фразу на английском" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="true" />
+                    <button id="typing-check" class="primary writing-check-btn">Проверить</button>
+                </div>
+                <div id="typing-tools" class="typing-tools hidden">
+                    <button id="typing-feedback-toggle" type="button">Показать подсветку</button>
+                </div>
+                <div id="typing-feedback" class="typing-feedback writing-feedback hidden"></div>
+                <div id="typing-answer" class="answer writing-answer hidden"></div>
+                <button id="explain-error-btn" type="button" class="hidden">Почему?</button>
+                <div id="explain-error-result" class="answer hidden"></div>
+                <div id="typing-next-wrap" class="writing-next-wrap hidden">
+                    <button id="typing-next" class="primary writing-next-btn">Дальше</button>
+                </div>
+                <button id="train-restart" class="primary train-restart-btn hidden" type="button">Начать заново</button>
+                <label class="autoplay-setting">
+                    <input id="autoplay-audio" type="checkbox" checked />
+                    Озвучивать автоматически в раундах 1 и 3
+                </label>
+            </div>
+        </section>
+
+        <section id="screen-stats" class="screen">
+            <h2>Статистика</h2>
+            <div class="stats-hero-grid">
+                <article class="card"><div class="label">Всего слов</div><div id="stats-total" class="value">0</div></article>
+                <article class="card"><div class="label">К повторению</div><div id="stats-due" class="value">0</div></article>
+                <article class="card"><div class="label">Streak</div><div id="stats-streak" class="value">0 🔥</div></article>
+                <article class="card"><div class="label">Рекорд за день</div><div id="stats-max-day" class="value">0</div></article>
+            </div>
+
+            <div class="stats-section">
+                <h3>Словарь</h3>
+                <p class="chart-caption">Новые / изучаются / выучены</p>
+                <div id="stats-vocab-bar"></div>
+            </div>
+
+            <div class="stats-section">
+                <h3>Нагрузка по раундам</h3>
+                <p class="chart-caption">Сколько карточек ждёт в каждом раунде тренировки</p>
+                <div id="stats-rounds-chart" class="bar-chart"></div>
+            </div>
+
+            <div class="stats-section">
+                <h3>Прогресс по уровням</h3>
+                <p class="chart-caption">Сколько слов на каждом из 5 уровней освоения</p>
+                <div id="stats-levels-chart" class="bar-chart"></div>
+            </div>
+
+            <div class="stats-section">
+                <h3>Активность</h3>
+                <p class="chart-caption">Повторения за последние 12 недель</p>
+                <div id="activity-calendar" class="calendar-grid"></div>
+            </div>
+        </section>
+
+        <section id="screen-theory" class="screen">
+            <h2>Теория</h2>
+            <div id="theory-categories" class="theory-categories"></div>
+            <div id="theory-topics" class="theory-topics hidden">
+                <button id="theory-back-to-categories" type="button" class="theory-back">← Категории</button>
+                <h3 id="theory-category-title"></h3>
+                <div id="theory-topic-list" class="theory-topic-list"></div>
+            </div>
+            <div id="theory-detail" class="theory-detail hidden">
+                <button id="theory-back-to-topics" type="button" class="theory-back">← Назад к списку тем</button>
+                <h3 id="theory-topic-title"></h3>
+                <div id="theory-topic-content" class="theory-topic-content"></div>
+                <button id="theory-reinforce" type="button" class="primary theory-reinforce-btn">📌 Закрепить тему</button>
+            </div>
+        </section>
+
+        <section id="screen-reading" class="screen">
+            <h2>Чтение</h2>
+            <div id="reading-library" class="reading-library"></div>
+
+            <div id="reading-book" class="reading-book hidden">
+                <button id="reading-back-to-library" type="button" class="theory-back">← Все книги</button>
+                <h2 id="reading-title" class="reading-book-title"></h2>
+                <p id="reading-subtitle" class="reading-subtitle"></p>
+                <div class="reading-layout">
+                    <div class="reading-text-pane">
+                        <div id="reading-paragraphs" class="reading-paragraphs"></div>
+                        <div class="reading-pager">
+                            <button id="reading-prev-page" type="button">← Назад</button>
+                            <span id="reading-page-indicator" class="reading-page-indicator"></span>
+                            <button id="reading-next-page" type="button">Вперёд →</button>
+                        </div>
+                    </div>
+                    <div class="reading-lookup-pane">
+                        <h3>Слово</h3>
+                        <div id="reading-lookup" class="reading-lookup">
+                            <p class="reading-lookup-empty">Нажмите на слово в тексте, чтобы увидеть перевод.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="screen-practice" class="screen">
+            <h2>Практика с AI</h2>
+            <p class="practice-note">Опишите в чате, что хотите потренировать — например «Сгенерируй мне упражнение по словам к повторению» или «Составь квиз по словам perennial, resilient на уровне B2». Задания собираются через adaptive-learning-repetitor (LLM + RAG); основная тренировка Anki не затрагивается.</p>
+
+            <div id="practice-chat-slot" class="practice-chat-slot"></div>
+        </section>
+    </main>
+</div>
+
+<button id="tips-launcher" type="button" class="tips-launcher" title="Советы на день">💡</button>
+<div id="tips-widget" class="tips-widget hidden">
+    <h2>Советы на сегодня</h2>
+    <div id="tips-content" class="tips-content">
+        <p class="tips-loading">Загружаю…</p>
+    </div>
+    <button id="tips-go-to-training" type="button" class="primary">Перейти к обучению</button>
+</div>
+
+<button id="chat-launcher" type="button" class="chat-launcher" title="Чат с AI">💬</button>
+<div id="chat-widget" class="chat-widget hidden">
+    <h2>Чат с репетитором</h2>
+    <p id="chat-status" class="chat-status">Проверка подключения к AI...</p>
+    <div id="chat-messages" class="chat-messages"></div>
+    <form id="chat-form" class="chat-form">
+        <textarea id="chat-input" rows="2" placeholder="Спросите про слово, грамматику или попросите упражнение..."></textarea>
+        <button type="submit" id="chat-send" class="chat-send" aria-label="Отправить">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+    </form>
+</div>
+
+<div id="profile-modal" class="profile-modal hidden">
+    <div class="profile-modal-card">
+        <div class="profile-modal-header">
+            <h2>Профиль</h2>
+            <button id="profile-modal-close" type="button" class="profile-modal-close" aria-label="Закрыть">✕</button>
+        </div>
+        <form id="profile-form">
+            <label>Имя
+                <input id="profile-name" type="text" placeholder="Как вас называть?" maxlength="80" />
+            </label>
+            <label>Email
+                <input id="profile-email-input" type="email" required />
+            </label>
+            <div class="actions">
+                <button type="submit" class="primary">Сохранить</button>
+            </div>
+            <div id="profile-save-status" class="profile-save-status"></div>
+        </form>
+    </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="/assets/app.js"></script>
+</body>
+</html>

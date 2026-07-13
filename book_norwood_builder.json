@@ -1,0 +1,214 @@
+{
+  "title": "The Adventure of the Norwood Builder",
+  "subtitle": "A Simplified Retelling for English Language Learners (CEFR A2)",
+  "source": "From The Return of Sherlock Holmes by Arthur Conan Doyle",
+  "characters": [
+    {
+      "name": "Sherlock Holmes",
+      "description": "a famous private detective. He is very clever and notices small details that other people miss."
+    },
+    {
+      "name": "Dr Watson",
+      "description": "Holmes's best friend and helper. He is a doctor. He tells the story."
+    },
+    {
+      "name": "Inspector Lestrade",
+      "description": "a police detective from Scotland Yard, the London police headquarters."
+    },
+    {
+      "name": "John McFarlane",
+      "description": "a young lawyer. He is in big trouble."
+    },
+    {
+      "name": "Jonas Oldacre",
+      "description": "an old man. He is a builder. He lives alone in a big house near London."
+    }
+  ],
+  "glossary": [
+    "A lawyer helps people with legal documents and problems.",
+    "A will is a document that says who will get a person's money and things after they die.",
+    "To inherit means to receive money or property from someone who has died.",
+    "A detective is a person who investigates crimes.",
+    "Evidence is information that helps to prove something.",
+    "A suburb is a town or area just outside a big city.",
+    "A telegram was a short written message sent quickly — like a text message, but on paper. It was delivered by a person on a bicycle. People used telegrams before telephones were common."
+  ],
+  "parts": [
+    {
+      "id": 1,
+      "title": "A Very Frightened Young Man",
+      "paragraphs": [
+        "One morning, Sherlock Holmes and his friend Dr Watson were eating breakfast at their home in Baker Street, London.",
+        "Holmes was feeling bored.",
+        "\"There are no interesting crimes in London anymore,\" he said. \"My work as a detective is almost finished.\"",
+        "\"Most people are very happy about that,\" said Watson with a smile.",
+        "Suddenly, they heard a loud knock at the front door. Then they heard feet running quickly up the stairs. A young man burst into the room. His hair was untidy. His face was white. He looked very frightened.",
+        "\"I'm sorry, Mr Holmes!\" he cried. \"Please don't be angry with me. I am nearly mad with worry. My name is John McFarlane.\"",
+        "He said his name as if Holmes should know it. But Holmes did not know it.",
+        "\"Sit down, Mr McFarlane,\" said Holmes calmly. \"Take a cigarette. Now, tell me slowly — who are you, and what has happened?\"",
+        "The young man sat down. He was shaking.",
+        "\"Mr Holmes, the police are going to arrest me. They think I killed a man. His name is Jonas Oldacre, and he lived in Lower Norwood — a suburb south of London. I did not kill him. But the evidence is against me. Please help me!\"",
+        "He picked up a newspaper from the table — The Daily Telegraph — and pointed to a big headline.",
+        "Watson read it aloud.",
+        "The newspaper said: A builder named Jonas Oldacre had disappeared from his house in Lower Norwood. There had been a fire in his garden at midnight. After the fire, people noticed that Oldacre was not in his house. His bedroom showed signs of a fight. There was blood on the floor. A walking stick was found — and it had blood on it too. The police believed that Oldacre had been killed, and that his body had been burned in the fire. The walking stick belonged to a young lawyer named John McFarlane. The police wanted to arrest him.",
+        "\"That is my situation, Mr Holmes,\" said McFarlane. \"I stayed in a hotel near Oldacre's house last night. This morning, I read this newspaper on the train. I came straight to you. Please — this will destroy my family.\""
+      ]
+    },
+    {
+      "id": 2,
+      "title": "McFarlane Tells His Story",
+      "paragraphs": [
+        "\"Tell us everything,\" said Holmes. \"We must be quick.\"",
+        "McFarlane explained:",
+        "\"Before yesterday, I had never met Jonas Oldacre. But yesterday afternoon, he came to my office in London. He said he wanted to write a will — a document saying who should get his money after his death.",
+        "\"He showed me the will. I could not believe what I read. He was leaving almost all his money and property to me! He said he had no family, that he had known my parents when he was young, and that he had heard good things about me.",
+        "\"I wrote the proper legal document and he signed it. Then he said he had many important papers at his home, and he asked me to visit that evening to go through them together. He said: 'Don't tell your parents about the will yet. Let it be a surprise.' I agreed.",
+        "\"I sent a telegram to my parents to say I would be late. I arrived at Oldacre's house at about half past nine in the evening. His housekeeper opened the door. Oldacre gave me some food. Then we went to his bedroom, where he had a large safe. We looked at many documents together.",
+        "\"We finished around midnight. He showed me out through the garden door. I noticed I had left my walking stick inside, but he said, 'Don't worry — I will keep it until you come back.' It was too late to travel home, so I stayed at a nearby hotel. The next morning, I read the terrible news in the newspaper.\"",
+        "Holmes asked McFarlane a few questions, then sat quietly for a moment.",
+        "At that moment, the doorbell rang. Heavy footsteps came up the stairs. Inspector Lestrade walked in. Behind him were two police officers.",
+        "\"Mr John McFarlane?\" said Lestrade.",
+        "\"Yes,\" said McFarlane, standing up slowly.",
+        "\"I am arresting you for the murder of Jonas Oldacre.\"",
+        "McFarlane looked at Holmes with desperate eyes. He sat back down heavily in his chair.",
+        "\"One moment, Lestrade,\" said Holmes. \"Let him finish his story. It will only take half an hour.\"",
+        "Lestrade agreed. When McFarlane had finished, Lestrade looked very confident.",
+        "\"It is simple,\" said Lestrade. \"McFarlane found out he would get all of Oldacre's money. So he killed him that same night, burned the body, and went to a hotel. The blood, the stick, the burned bones — everything points to him.\"",
+        "\"It seems almost too simple,\" said Holmes quietly. \"If you were going to commit a murder, would you really do it on the same night as the will was signed? When the housekeeper had already seen your face? And would you leave your own walking stick at the scene?\"",
+        "\"Criminals often make mistakes,\" said Lestrade. He took McFarlane away.",
+        "After they left, Holmes looked carefully at the handwritten notes Oldacre had used to write his will.",
+        "\"Look at this handwriting,\" he said to Watson. \"Some lines are neat and clear. Others are shaky and hard to read. This was written on a train — the neat parts were written when the train was stopped, and the shaky parts when it was moving. Oldacre decided to leave his money to McFarlane only that morning, on the way to London. That is very strange. A man who writes his will so quickly and carelessly perhaps never intends to use it.\""
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Holmes Investigates",
+      "paragraphs": [
+        "Holmes spent the day investigating. When he came home that evening, he looked tired and unhappy.",
+        "\"Things are going badly, Watson,\" he said.",
+        "He explained everything he had found:",
+        "\"First, I visited McFarlane's mother at the family home. She was very upset but completely certain her son was innocent. She told me about Oldacre. When she was young, Oldacre had wanted to marry her. She had refused him — because she had found out that he was a cruel and unpleasant man. On the morning of her wedding to someone else, Oldacre had sent her a photograph of herself with the face cut out as an act of revenge. She said he had been a wicked man his whole life.",
+        "\"Then I went to Oldacre's house in Norwood. The police had found metal buttons in the ashes of the fire. The buttons came from trousers made by Oldacre's tailor. There were marks on the grass showing that something heavy had been dragged from the house to the fire. The blood in the bedroom was very little — just small smears.",
+        "\"I also noticed that some documents mentioned in the paperwork were missing from the safe. And in Oldacre's bank records, I found that in the last year he had been sending large amounts of money to someone called 'Mr Cornelius.' I don't know who that is.",
+        "\"Finally, I spoke with the housekeeper, Mrs Lexington. She was quiet and unfriendly. She confirmed that McFarlane had arrived at half past nine and left his hat and stick in the hallway. She had gone to bed at half past ten and heard nothing after that. I am certain she knows more than she is saying.",
+        "\"So, Watson — I found almost nothing to help McFarlane. But I am sure something is wrong here. I just cannot prove it yet.\"",
+        "The next morning, a telegram arrived from Lestrade. Watson read it:",
+        "Important new evidence found. McFarlane is definitely guilty. I advise you to give up the case. — Lestrade.",
+        "\"What does this mean?\" asked Watson.",
+        "\"It means Lestrade has found something exciting,\" said Holmes, with a small strange smile. \"Come, Watson. Let us go to Norwood immediately.\""
+      ]
+    },
+    {
+      "id": 4,
+      "title": "The Thumbprint",
+      "paragraphs": [
+        "At Oldacre's house, Lestrade met them at the gate. He looked very pleased.",
+        "\"Come and see what we have found, Mr Holmes,\" he said.",
+        "He took them inside to the dark entrance hallway. He lit a match and held it up to the white wall.",
+        "On the wall was a bloody thumbprint — the mark of a thumb made in blood.",
+        "\"Now look at this,\" said Lestrade. He took out a small piece of wax with a thumbprint pressed into it. \"This morning, we took a copy of McFarlane's right thumb. Compare them.\"",
+        "Even without a magnifying glass, it was clear. The two prints were the same.",
+        "\"That is final proof,\" said Lestrade.",
+        "\"Yes,\" said Watson quietly. \"That is final.\"",
+        "\"It is final,\" said Holmes.",
+        "Watson looked at Holmes and noticed something very strange. Holmes's eyes were bright and shining. He was trying very hard not to laugh.",
+        "\"How very interesting,\" said Holmes softly. \"How appearances can be so deceiving.\"",
+        "Lestrade went to write his report. Holmes turned to Watson.",
+        "\"There is one very important problem with this evidence,\" said Holmes.",
+        "\"What?\" asked Watson.",
+        "\"I examined this hallway carefully yesterday. This wall was completely clean. There was no thumbprint. It has appeared overnight — while McFarlane was locked in a police cell.\"",
+        "Watson stared at him. \"But that means—\"",
+        "\"Yes,\" said Holmes. \"Someone put it there on purpose.\""
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Fire!",
+      "paragraphs": [
+        "Holmes went to find Lestrade.",
+        "\"Before you finish your report,\" said Holmes, \"I think there is an important witness you have not spoken to yet.\"",
+        "\"Who?\" said Lestrade.",
+        "\"I will show you. I need your three officers, some dry straw from the garden shed, and a bucket of water.\"",
+        "Lestrade looked at Holmes strangely, but he gave the orders. A few minutes later, they were all standing at the end of the upstairs corridor. Two bundles of dry straw were on the floor. A bucket of water stood nearby. The three officers and Lestrade waited and watched.",
+        "\"Open that window, Watson,\" said Holmes. \"And light the straw.\"",
+        "Watson did it. Smoke began to move along the corridor. The straw crackled and burned.",
+        "\"Now,\" said Holmes, \"everyone please shout 'Fire!' together — as loud as possible. Ready? One, two, three—\"",
+        "\"FIRE!\"",
+        "\"Again, please.\"",
+        "\"FIRE!\"",
+        "\"Once more — everybody!\"",
+        "\"FIRE!\"",
+        "For a moment, nothing happened.",
+        "Then, at the far end of the corridor — where there was only a plain wall — a hidden door suddenly flew open. A small, thin, frightened man ran out, coughing and looking around wildly.",
+        "\"Excellent!\" said Holmes calmly. \"Watson — put the water on the straw. Lestrade — I would like to introduce you to Jonas Oldacre.\""
+      ]
+    },
+    {
+      "id": 6,
+      "title": "The Explanation",
+      "paragraphs": [
+        "Oldacre blinked in the bright light. He was a small, unpleasant-looking man with pale eyes. He looked frightened and guilty.",
+        "\"What is going on?\" said Lestrade, stepping towards him. \"What have you been doing in there?\"",
+        "\"It was only a joke,\" said Oldacre, moving backwards. \"I just hid myself to see what would happen. I would never have let the young man really go to prison—\"",
+        "\"A joke?\" Lestrade's face turned red with anger. \"You nearly got an innocent man hanged! Take him downstairs.\"",
+        "The officers took Oldacre away. Lestrade turned to Holmes.",
+        "\"That is the most brilliant thing I have ever seen you do,\" said Lestrade. \"But how did you know he was still in the house? And how did you find the hidden room?\"",
+        "Holmes explained:",
+        "\"The thumbprint told me. I knew the wall was clean when I checked it yesterday. So someone had put the print there during the night. McFarlane was in a police cell. That meant only one thing — Oldacre was still in the building, and his housekeeper was helping him.",
+        "\"I found the hidden room by measuring. This upstairs corridor was six feet shorter than the corridor on the floor below. The only explanation was a hidden space. And since Oldacre was a builder, it was easy for him to build a secret room himself, without anyone else knowing.\"",
+        "\"And the thumbprint?\" asked Lestrade. \"How did he get McFarlane's thumbprint?\"",
+        "\"During their meeting, when they were closing the documents with wax seals, Oldacre asked McFarlane to press his thumb into the soft wax. This was completely normal — just part of the process. McFarlane probably does not even remember doing it. Later, hiding in his secret room, Oldacre realised he could use that wax print as false evidence. He put a little blood on it — probably from a small cut on his finger — and pressed it onto the wall during the night.\"",
+        "\"But why did he do all of this?\" asked Lestrade.",
+        "Holmes explained:",
+        "\"Many years ago, McFarlane's mother had refused to marry Oldacre. He was furious, and he never forgave her. He waited his whole life for a chance to hurt her family.",
+        "\"He also had money problems. In the last year, he had been secretly moving large amounts of money to a bank account under a false name — 'Mr Cornelius.' He was planning to disappear, take the money, and start a new life somewhere else.",
+        "\"Then he had a very clever idea. He could do two things at once — escape his money problems AND punish McFarlane's mother. His plan was: write a will leaving everything to McFarlane, invite McFarlane to visit at night, make it look like McFarlane had murdered him, then hide in the secret room and watch as the police arrested McFarlane. His mother would watch her son go to prison for murder.",
+        "\"He burned animal bones and some old clothes in the fire to make it look like a human body had been burned. He kept McFarlane's walking stick as evidence. He had his housekeeper help him.",
+        "\"It was an almost perfect plan. But then he made one mistake. He wanted more evidence against McFarlane, so he added the thumbprint. And that extra step destroyed everything — because I had already checked that wall.\"",
+        "The End",
+        "Oldacre was arrested. The housekeeper, Mrs Lexington, was also arrested for helping him.",
+        "McFarlane was immediately released from prison.",
+        "Lestrade shook Holmes's hand. \"Thank you, Mr Holmes. You saved that young man's life.\"",
+        "\"The work is its own reward,\" said Holmes with a smile.",
+        "As they walked home, Watson asked: \"Holmes, one thing is still not clear to me. What did Oldacre burn in the wood pile, if it was not a human body?\"",
+        "\"I asked him that,\" said Holmes. \"He refused to tell me. But I believe it was a couple of rabbits.\"",
+        "Watson laughed. \"Rabbits?\"",
+        "\"Rabbits,\" said Holmes, smiling. \"They produce enough blood, and enough ashes, to look convincing. It is really quite simple, when you think about it.\"",
+        "After the Story: Check Your Understanding",
+        "Who are these people? Match them.",
+        "John McFarlane",
+        "Jonas Oldacre",
+        "Inspector Lestrade",
+        "Mrs Lexington",
+        "a) He pretended to be dead. b) He was arrested for murder, but was innocent. c) She helped hide the truth from the police. d) He arrested the wrong person at first.",
+        "(Answers: 1-b, 2-a, 3-d, 4-c)",
+        "True or False?",
+        "McFarlane had known Oldacre for many years. (False — he had never met him before)",
+        "Oldacre's will left all his money to McFarlane. (True)",
+        "Holmes found the thumbprint on the wall. (False — Lestrade found it, but Holmes knew it was fake)",
+        "Oldacre built the secret room himself. (True)",
+        "The body in the fire was Oldacre's. (False — it was probably animal bones)",
+        "Key Words to Remember",
+        "Word",
+        "Meaning",
+        "will",
+        "a document saying who gets your money when you die",
+        "inherit",
+        "to receive money or things from someone who has died",
+        "evidence",
+        "information that helps prove something",
+        "arrest",
+        "to take someone to the police because they may have committed a crime",
+        "suspect",
+        "a person the police think may have committed a crime",
+        "motive",
+        "a reason for doing something (often a crime)",
+        "alibi",
+        "proof that you were somewhere else when a crime happened",
+        "false",
+        "not real; not true",
+        "Original story by Arthur Conan Doyle, first published 1903."
+      ]
+    }
+  ]
+}

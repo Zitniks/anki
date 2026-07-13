@@ -1,0 +1,10 @@
+.git
+.env
+*.db
+*.db-shm
+*.db-wal
+*.md
+*.docx
+landing/node_modules
+landing/dist
+scripts/__pycache__

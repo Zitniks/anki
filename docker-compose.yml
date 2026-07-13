@@ -1,0 +1,18 @@
+services:
+  anki-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: anki
+      POSTGRES_USER: anki
+      POSTGRES_PASSWORD: anki_pass
+    ports: ["5434:5432"]
+    volumes: [anki_pgdata:/var/lib/postgresql/data]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anki"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  anki_pgdata:

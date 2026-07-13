@@ -1,0 +1,27 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Local dev DB artifacts
+*.db
+*.db-shm
+*.db-wal
+
+# Landing (Vite/React)
+landing/node_modules/
+landing/dist/
+
+# Source content (docx) — kept out of git, only the generated JSON is served;
+# keep the docx locally if you re-run scripts/gen_book_json.py.
+*.docx
+
+# macOS
+.DS_Store
+
+# stray unreferenced screenshot
+landing/Снимок экрана*.png
+
+# Editor
+.vscode/
+.idea/

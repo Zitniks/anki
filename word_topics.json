@@ -1,0 +1,188 @@
+{
+  "topics": [
+    {
+      "id": "travel",
+      "title": "Путешествия",
+      "icon": "✈️",
+      "words": [
+        { "word": "itinerary", "translation": "маршрут", "transcription": "/aɪˈtɪnərəri/", "example": "Our itinerary includes three cities in two weeks." },
+        { "word": "luggage", "translation": "багаж", "transcription": "/ˈlʌɡɪdʒ/", "example": "Please keep an eye on your luggage at the airport." },
+        { "word": "boarding pass", "translation": "посадочный талон", "transcription": "/ˈbɔːrdɪŋ pæs/", "example": "Don't forget to print your boarding pass." },
+        { "word": "layover", "translation": "пересадка", "transcription": "/ˈleɪoʊvər/", "example": "We have a three-hour layover in Istanbul." },
+        { "word": "customs", "translation": "таможня", "transcription": "/ˈkʌstəmz/", "example": "You need to declare your goods at customs." },
+        { "word": "accommodation", "translation": "размещение, жильё", "transcription": "/əˌkɒməˈdeɪʃən/", "example": "We booked accommodation near the city center." },
+        { "word": "journey", "translation": "путешествие, поездка", "transcription": "/ˈdʒɜːrni/", "example": "It was a long journey across the country." },
+        { "word": "souvenir", "translation": "сувенир", "transcription": "/ˌsuːvəˈnɪr/", "example": "I bought a souvenir for my sister." },
+        { "word": "passport", "translation": "паспорт", "transcription": "/ˈpæspɔːrt/", "example": "Make sure your passport is still valid." },
+        { "word": "sightseeing", "translation": "осмотр достопримечательностей", "transcription": "/ˈsaɪtˌsiːɪŋ/", "example": "We spent the day sightseeing in Rome." },
+        { "word": "currency exchange", "translation": "обмен валюты", "transcription": "/ˈkɜːrənsi ɪksˈtʃeɪndʒ/", "example": "There's a currency exchange office at the airport." },
+        { "word": "hostel", "translation": "хостел", "transcription": "/ˈhɒstəl/", "example": "We stayed at a cheap hostel near the station." },
+        { "word": "departure", "translation": "отправление, вылет", "transcription": "/dɪˈpɑːrtʃər/", "example": "The departure time was delayed by two hours." },
+        { "word": "destination", "translation": "пункт назначения", "transcription": "/ˌdestɪˈneɪʃən/", "example": "Paris was our final destination." },
+        { "word": "tourist", "translation": "турист", "transcription": "/ˈtʊrɪst/", "example": "The old town is full of tourists in summer." },
+        { "word": "reservation", "translation": "бронь, резервация", "transcription": "/ˌrezərˈveɪʃən/", "example": "I made a reservation at a nice restaurant." }
+      ]
+    },
+    {
+      "id": "food",
+      "title": "Еда и кухня",
+      "icon": "🍳",
+      "words": [
+        { "word": "ingredient", "translation": "ингредиент", "transcription": "/ɪnˈɡriːdiənt/", "example": "Flour is the main ingredient in bread." },
+        { "word": "recipe", "translation": "рецепт", "transcription": "/ˈresəpi/", "example": "She shared her grandmother's recipe with me." },
+        { "word": "leftovers", "translation": "остатки еды", "transcription": "/ˈleftˌoʊvərz/", "example": "We had the leftovers for lunch the next day." },
+        { "word": "appetite", "translation": "аппетит", "transcription": "/ˈæpɪtaɪt/", "example": "A long walk always gives me an appetite." },
+        { "word": "seasoning", "translation": "приправа", "transcription": "/ˈsiːzənɪŋ/", "example": "Add some seasoning to make the soup tastier." },
+        { "word": "bake", "translation": "печь (в духовке)", "transcription": "/beɪk/", "example": "My mom bakes bread every Sunday." },
+        { "word": "simmer", "translation": "томить на медленном огне", "transcription": "/ˈsɪmər/", "example": "Let the sauce simmer for twenty minutes." },
+        { "word": "dessert", "translation": "десерт", "transcription": "/dɪˈzɜːrt/", "example": "We ordered chocolate cake for dessert." },
+        { "word": "beverage", "translation": "напиток", "transcription": "/ˈbevərɪdʒ/", "example": "The menu offers a wide range of beverages." },
+        { "word": "grocery", "translation": "бакалея, продукты", "transcription": "/ˈɡroʊsəri/", "example": "I need to buy groceries after work." },
+        { "word": "spicy", "translation": "острый (о вкусе)", "transcription": "/ˈspaɪsi/", "example": "This curry is too spicy for me." },
+        { "word": "stale", "translation": "чёрствый, несвежий", "transcription": "/steɪl/", "example": "The bread went stale after two days." },
+        { "word": "crispy", "translation": "хрустящий", "transcription": "/ˈkrɪspi/", "example": "I love crispy fried chicken." },
+        { "word": "blend", "translation": "смешивать", "transcription": "/blend/", "example": "Blend the fruit until smooth." },
+        { "word": "nutritious", "translation": "питательный", "transcription": "/nuːˈtrɪʃəs/", "example": "Vegetables are nutritious and low in calories." },
+        { "word": "starving", "translation": "умирающий с голоду", "transcription": "/ˈstɑːrvɪŋ/", "example": "I'm starving, let's eat now." }
+      ]
+    },
+    {
+      "id": "work",
+      "title": "Работа и карьера",
+      "icon": "💼",
+      "words": [
+        { "word": "deadline", "translation": "крайний срок", "transcription": "/ˈdedlaɪn/", "example": "We need to finish the report before the deadline." },
+        { "word": "colleague", "translation": "коллега", "transcription": "/ˈkɒliːɡ/", "example": "My colleague helped me with the presentation." },
+        { "word": "promotion", "translation": "повышение", "transcription": "/prəˈmoʊʃən/", "example": "She got a promotion after two years." },
+        { "word": "salary", "translation": "зарплата", "transcription": "/ˈsæləri/", "example": "The salary depends on your experience." },
+        { "word": "resume", "translation": "резюме", "transcription": "/ˈrezʊmeɪ/", "example": "Send your resume to the HR department." },
+        { "word": "interview", "translation": "собеседование", "transcription": "/ˈɪntərvjuː/", "example": "The interview went really well." },
+        { "word": "workload", "translation": "рабочая нагрузка", "transcription": "/ˈwɜːrkloʊd/", "example": "The workload increases at the end of the month." },
+        { "word": "overtime", "translation": "сверхурочные", "transcription": "/ˈoʊvərtaɪm/", "example": "He worked overtime to finish the project." },
+        { "word": "resign", "translation": "увольняться (по собственному желанию)", "transcription": "/rɪˈzaɪn/", "example": "She decided to resign from her job." },
+        { "word": "negotiate", "translation": "вести переговоры", "transcription": "/nɪˈɡoʊʃieɪt/", "example": "We need to negotiate a better price." },
+        { "word": "achievement", "translation": "достижение", "transcription": "/əˈtʃiːvmənt/", "example": "Winning the award was a great achievement." },
+        { "word": "supervisor", "translation": "руководитель, начальник", "transcription": "/ˈsuːpərvaɪzər/", "example": "My supervisor reviewed my work." },
+        { "word": "task", "translation": "задача", "transcription": "/tæsk/", "example": "I have several tasks to complete today." },
+        { "word": "skill", "translation": "навык", "transcription": "/skɪl/", "example": "Communication is an important skill." },
+        { "word": "career", "translation": "карьера", "transcription": "/kəˈrɪr/", "example": "She built a successful career in law." },
+        { "word": "teamwork", "translation": "командная работа", "transcription": "/ˈtiːmwɜːrk/", "example": "Good teamwork made the project a success." }
+      ]
+    },
+    {
+      "id": "emotions",
+      "title": "Эмоции и характер",
+      "icon": "🎭",
+      "words": [
+        { "word": "anxious", "translation": "тревожный, обеспокоенный", "transcription": "/ˈæŋkʃəs/", "example": "I felt anxious before the exam." },
+        { "word": "confident", "translation": "уверенный в себе", "transcription": "/ˈkɒnfɪdənt/", "example": "She spoke in a confident voice." },
+        { "word": "generous", "translation": "щедрый", "transcription": "/ˈdʒenərəs/", "example": "He is very generous with his time." },
+        { "word": "stubborn", "translation": "упрямый", "transcription": "/ˈstʌbərn/", "example": "My brother is too stubborn to admit he's wrong." },
+        { "word": "curious", "translation": "любопытный", "transcription": "/ˈkjʊriəs/", "example": "Children are naturally curious about the world." },
+        { "word": "jealous", "translation": "ревнивый, завистливый", "transcription": "/ˈdʒeləs/", "example": "He felt jealous of his friend's success." },
+        { "word": "grateful", "translation": "благодарный", "transcription": "/ˈɡreɪtfəl/", "example": "I'm grateful for your help." },
+        { "word": "embarrassed", "translation": "смущённый", "transcription": "/ɪmˈbærəst/", "example": "She felt embarrassed after forgetting his name." },
+        { "word": "cheerful", "translation": "жизнерадостный", "transcription": "/ˈtʃɪrfəl/", "example": "He's always cheerful in the morning." },
+        { "word": "patient", "translation": "терпеливый", "transcription": "/ˈpeɪʃənt/", "example": "You need to be patient with beginners." },
+        { "word": "arrogant", "translation": "высокомерный", "transcription": "/ˈærəɡənt/", "example": "Nobody likes his arrogant attitude." },
+        { "word": "sincere", "translation": "искренний", "transcription": "/sɪnˈsɪr/", "example": "Her apology sounded sincere." },
+        { "word": "frustrated", "translation": "раздражённый, разочарованный", "transcription": "/ˈfrʌstreɪtɪd/", "example": "I get frustrated when the internet is slow." },
+        { "word": "optimistic", "translation": "оптимистичный", "transcription": "/ˌɒptɪˈmɪstɪk/", "example": "She stayed optimistic despite the setback." },
+        { "word": "reliable", "translation": "надёжный", "transcription": "/rɪˈlaɪəbəl/", "example": "He's a reliable friend, always on time." },
+        { "word": "modest", "translation": "скромный", "transcription": "/ˈmɒdɪst/", "example": "Despite his success, he remained modest." }
+      ]
+    },
+    {
+      "id": "home",
+      "title": "Дом и быт",
+      "icon": "🏠",
+      "words": [
+        { "word": "chores", "translation": "домашние дела", "transcription": "/tʃɔːrz/", "example": "I do the chores every Saturday morning." },
+        { "word": "tidy", "translation": "аккуратный, убранный", "transcription": "/ˈtaɪdi/", "example": "Keep your room tidy, please." },
+        { "word": "furniture", "translation": "мебель", "transcription": "/ˈfɜːrnɪtʃər/", "example": "We bought new furniture for the living room." },
+        { "word": "laundry", "translation": "стирка, бельё", "transcription": "/ˈlɔːndri/", "example": "I need to do the laundry today." },
+        { "word": "leak", "translation": "протечка", "transcription": "/liːk/", "example": "There's a leak under the kitchen sink." },
+        { "word": "tenant", "translation": "арендатор, жилец", "transcription": "/ˈtenənt/", "example": "The tenant pays rent on the first of the month." },
+        { "word": "landlord", "translation": "арендодатель, хозяин жилья", "transcription": "/ˈlændlɔːrd/", "example": "Our landlord fixed the heater quickly." },
+        { "word": "utility bill", "translation": "счёт за коммунальные услуги", "transcription": "/juːˈtɪləti bɪl/", "example": "We pay the utility bill online." },
+        { "word": "vacuum", "translation": "пылесосить", "transcription": "/ˈvækjuːm/", "example": "Can you vacuum the carpet, please?" },
+        { "word": "mess", "translation": "беспорядок", "transcription": "/mes/", "example": "The kids made a mess in the kitchen." },
+        { "word": "neighbor", "translation": "сосед", "transcription": "/ˈneɪbər/", "example": "Our neighbor is very friendly." },
+        { "word": "appliance", "translation": "бытовой прибор", "transcription": "/əˈplaɪəns/", "example": "The washing machine is a useful appliance." },
+        { "word": "renovate", "translation": "ремонтировать, обновлять", "transcription": "/ˈrenəveɪt/", "example": "We plan to renovate the bathroom next year." },
+        { "word": "spacious", "translation": "просторный", "transcription": "/ˈspeɪʃəs/", "example": "Their new apartment is bright and spacious." },
+        { "word": "cozy", "translation": "уютный", "transcription": "/ˈkoʊzi/", "example": "The cabin felt cozy and warm." },
+        { "word": "household", "translation": "домашнее хозяйство", "transcription": "/ˈhaʊshoʊld/", "example": "Every household has its own routine." }
+      ]
+    },
+    {
+      "id": "technology",
+      "title": "Технологии",
+      "icon": "💻",
+      "words": [
+        { "word": "device", "translation": "устройство", "transcription": "/dɪˈvaɪs/", "example": "This device connects to your phone via Bluetooth." },
+        { "word": "upgrade", "translation": "обновление, улучшение", "transcription": "/ˈʌpɡreɪd/", "example": "I need to upgrade my laptop's memory." },
+        { "word": "malware", "translation": "вредоносное ПО", "transcription": "/ˈmælwer/", "example": "The antivirus detected malware on the computer." },
+        { "word": "bandwidth", "translation": "пропускная способность сети", "transcription": "/ˈbændwɪdθ/", "example": "Video calls use a lot of bandwidth." },
+        { "word": "backup", "translation": "резервная копия", "transcription": "/ˈbækʌp/", "example": "Always keep a backup of your important files." },
+        { "word": "glitch", "translation": "сбой, глюк", "transcription": "/ɡlɪtʃ/", "example": "There was a glitch in the app yesterday." },
+        { "word": "password", "translation": "пароль", "transcription": "/ˈpæswɜːrd/", "example": "Choose a strong password for your account." },
+        { "word": "wireless", "translation": "беспроводной", "transcription": "/ˈwaɪrləs/", "example": "We have wireless internet at home." },
+        { "word": "install", "translation": "устанавливать (программу)", "transcription": "/ɪnˈstɔːl/", "example": "Install the update before restarting." },
+        { "word": "browser", "translation": "браузер", "transcription": "/ˈbraʊzər/", "example": "Which browser do you use most often?" },
+        { "word": "notification", "translation": "уведомление", "transcription": "/ˌnoʊtɪfɪˈkeɪʃən/", "example": "I turned off notifications during the meeting." },
+        { "word": "storage", "translation": "хранилище", "transcription": "/ˈstɔːrɪdʒ/", "example": "Cloud storage lets you access files anywhere." },
+        { "word": "firmware", "translation": "прошивка", "transcription": "/ˈfɜːrmwer/", "example": "The manufacturer released a new firmware update." },
+        { "word": "shortcut", "translation": "ярлык, сочетание клавиш", "transcription": "/ˈʃɔːrtkʌt/", "example": "Use a keyboard shortcut to save time." },
+        { "word": "troubleshoot", "translation": "устранять неполадки", "transcription": "/ˈtrʌbəlʃuːt/", "example": "I tried to troubleshoot the printer issue." },
+        { "word": "compatible", "translation": "совместимый", "transcription": "/kəmˈpætəbəl/", "example": "Make sure the charger is compatible with your phone." }
+      ]
+    },
+    {
+      "id": "nature",
+      "title": "Природа и погода",
+      "icon": "🌦️",
+      "words": [
+        { "word": "drizzle", "translation": "морось, мелкий дождь", "transcription": "/ˈdrɪzəl/", "example": "It was just a light drizzle outside." },
+        { "word": "humidity", "translation": "влажность", "transcription": "/hjuːˈmɪdəti/", "example": "The humidity makes summer feel hotter." },
+        { "word": "breeze", "translation": "лёгкий ветерок", "transcription": "/briːz/", "example": "A cool breeze came from the sea." },
+        { "word": "thunderstorm", "translation": "гроза", "transcription": "/ˈθʌndərstɔːrm/", "example": "A thunderstorm is expected this evening." },
+        { "word": "drought", "translation": "засуха", "transcription": "/draʊt/", "example": "The region suffered a severe drought last year." },
+        { "word": "blizzard", "translation": "метель, буран", "transcription": "/ˈblɪzərd/", "example": "The blizzard closed all the roads." },
+        { "word": "wildlife", "translation": "дикая природа", "transcription": "/ˈwaɪldlaɪf/", "example": "The park protects the local wildlife." },
+        { "word": "valley", "translation": "долина", "transcription": "/ˈvæli/", "example": "The village lies in a green valley." },
+        { "word": "shore", "translation": "берег (моря, озера)", "transcription": "/ʃɔːr/", "example": "We walked along the shore at sunset." },
+        { "word": "forecast", "translation": "прогноз погоды", "transcription": "/ˈfɔːrkæst/", "example": "The forecast predicts rain tomorrow." },
+        { "word": "temperature", "translation": "температура", "transcription": "/ˈtemprətʃər/", "example": "The temperature dropped suddenly at night." },
+        { "word": "flood", "translation": "наводнение", "transcription": "/flʌd/", "example": "Heavy rain caused a flood in the city." },
+        { "word": "rainforest", "translation": "тропический лес", "transcription": "/ˈreɪnfɒrɪst/", "example": "The Amazon rainforest is home to many species." },
+        { "word": "frost", "translation": "мороз, изморозь", "transcription": "/frɒst/", "example": "The frost damaged the young plants." },
+        { "word": "gust", "translation": "порыв ветра", "transcription": "/ɡʌst/", "example": "A sudden gust of wind knocked over the umbrella." },
+        { "word": "climate", "translation": "климат", "transcription": "/ˈklaɪmɪt/", "example": "The climate here is mild all year round." }
+      ]
+    },
+    {
+      "id": "health",
+      "title": "Здоровье",
+      "icon": "🩺",
+      "words": [
+        { "word": "symptom", "translation": "симптом", "transcription": "/ˈsɪmptəm/", "example": "A high temperature is a common symptom of flu." },
+        { "word": "recover", "translation": "выздоравливать", "transcription": "/rɪˈkʌvər/", "example": "It took him a week to recover from the cold." },
+        { "word": "prescription", "translation": "рецепт (на лекарство)", "transcription": "/prɪˈskrɪpʃən/", "example": "The doctor wrote a prescription for antibiotics." },
+        { "word": "exhausted", "translation": "истощённый, измотанный", "transcription": "/ɪɡˈzɔːstɪd/", "example": "I felt exhausted after the long shift." },
+        { "word": "injury", "translation": "травма", "transcription": "/ˈɪndʒəri/", "example": "He suffered a minor injury during training." },
+        { "word": "allergy", "translation": "аллергия", "transcription": "/ˈælərdʒi/", "example": "She has an allergy to peanuts." },
+        { "word": "nutrition", "translation": "питание (режим)", "transcription": "/nuːˈtrɪʃən/", "example": "Good nutrition is essential for children." },
+        { "word": "immune system", "translation": "иммунная система", "transcription": "/ɪˈmjuːn ˈsɪstəm/", "example": "Vitamin C supports the immune system." },
+        { "word": "checkup", "translation": "медосмотр", "transcription": "/ˈtʃekʌp/", "example": "I have a dental checkup next week." },
+        { "word": "dizzy", "translation": "испытывающий головокружение", "transcription": "/ˈdɪzi/", "example": "I felt dizzy after standing up too fast." },
+        { "word": "swelling", "translation": "отёк, опухоль", "transcription": "/ˈswelɪŋ/", "example": "There was some swelling around the ankle." },
+        { "word": "fatigue", "translation": "усталость, утомление", "transcription": "/fəˈtiːɡ/", "example": "Chronic fatigue can affect your mood." },
+        { "word": "treatment", "translation": "лечение", "transcription": "/ˈtriːtmənt/", "example": "The treatment lasted for three weeks." },
+        { "word": "bruise", "translation": "синяк", "transcription": "/bruːz/", "example": "He got a bruise from falling off his bike." },
+        { "word": "healthy", "translation": "здоровый", "transcription": "/ˈhelθi/", "example": "Eating vegetables keeps you healthy." },
+        { "word": "wound", "translation": "рана", "transcription": "/wuːnd/", "example": "The nurse cleaned the wound carefully." }
+      ]
+    }
+  ]
+}
