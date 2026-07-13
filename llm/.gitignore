@@ -27,8 +27,9 @@ uploads/
 # Caddy user credentials (keep this private!)
 users.caddy
 
-# Database files
+# Database files (this also matches alembic/versions/, which must stay tracked)
 versions/
+!alembic/versions/
 backups/
 
 # Graphify generated output
