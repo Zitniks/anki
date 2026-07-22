@@ -655,7 +655,7 @@ async function lookupBookWord(word, spanEl) {
 }
 
 function renderReadingLookup(word, draft) {
-  const sourceLabel = draft.source === "rag" ? "пример из RAG" : "пример от AI";
+  const sourceLabel = draft.source === "rag" ? "готовый пример" : "пример от AI";
   const transcriptionHtml = draft.transcription
     ? `<div class="reading-lookup-transcription">${escapeHtml(draft.transcription)}</div>`
     : "";
@@ -1804,7 +1804,7 @@ async function loadAIStatus() {
     const data = await res.json();
     state.aiReady = Boolean(data.ready);
     if (data.ready) {
-      el.textContent = `AI подключён (${data.base_url || "repetitor"})`;
+      el.textContent = "AI подключён";
       el.className = "chat-status online";
     } else {
       el.className = "chat-status hidden";
@@ -1911,7 +1911,7 @@ async function onChatSubmit(e) {
 
   if (!state.aiReady) {
     renderChatMessages();
-    showError("AI репетитор недоступен. Запустите adaptive-learning-repetitor и проверьте .env");
+    showError("AI репетитор временно недоступен. Попробуйте позже.");
     return;
   }
 
@@ -2079,13 +2079,13 @@ async function fetchPracticeSet(words, level = "B1") {
 }
 
 function buildQuizMetaEl(data) {
-  const sourceLabel = data.source === "repetitor" ? "AI + RAG (repetitor)" : "локальный шаблон";
-  const ragPart = Array.isArray(data.sources) && data.sources.length > 0
-    ? ` · RAG: ${data.sources.join(", ")}`
+  const sourceLabel = data.source === "repetitor" ? "AI-репетитор" : "локальный шаблон";
+  const materialsPart = Array.isArray(data.sources) && data.sources.length > 0
+    ? ` · Материалы: ${data.sources.join(", ")}`
     : "";
   const el = document.createElement("div");
   el.className = "quiz-meta";
-  el.textContent = `Источник: ${sourceLabel}${ragPart}`;
+  el.textContent = `Источник: ${sourceLabel}${materialsPart}`;
   return el;
 }
 
