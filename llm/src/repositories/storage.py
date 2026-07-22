@@ -4,15 +4,12 @@ from typing import Any, ClassVar
 
 from database import async_session_factory
 
-from repositories.calendar_event import CalendarEventRepository
 from repositories.chat import ChatRepository
-from repositories.curriculum import LessonRepository, RepeatItemRepository
-from repositories.example import ExampleRepository
+from repositories.curriculum import LessonRepository
 from repositories.file import FileRepository
 from repositories.file_storage import FileStorageRepository
-from repositories.knowledge import KnowledgeDocRepository
 from repositories.learning_event import LearningEventRepository
-from repositories.material import MaterialLinkRepository, MaterialRepository
+from repositories.material import MaterialRepository
 from repositories.message import MessageRepository
 from repositories.project import ProjectRepository
 from repositories.topic import TopicRepository
@@ -39,16 +36,11 @@ class Storage:
         "vocabulary": VocabularyRepository,
         "topics": TopicRepository,
         "materials": MaterialRepository,
-        "material_links": MaterialLinkRepository,
         "lessons": LessonRepository,
-        "calendar_events": CalendarEventRepository,
-        "repeat_items": RepeatItemRepository,
         "users": UserRepository,
         "usage_log": UsageLogRepository,
         "learning_events": LearningEventRepository,
         "topic_mastery": TopicMasteryRepository,
-        "example_bank": ExampleRepository,
-        "knowledge_docs": KnowledgeDocRepository,
     }
 
     def __init__(self) -> None:

@@ -1,9 +1,8 @@
 """Learning event ingestion for gRPC (Anki `PublishEvent`).
 
-Reuses the same two writes as `routers/analytics.py::log_learning_event`
-(the existing REST path): a raw `LearningEvent` audit row, then the BKT+ALS
-upsert via `TopicMasteryRepository.update_from_event`. Anki has no notion of
-grammar topics, so per the MVP decision each word is its own topic
+Two writes: a raw `LearningEvent` audit row, then the BKT+ALS upsert via
+`TopicMasteryRepository.update_from_event`. Anki has no notion of grammar
+topics, so per the MVP decision each word is its own topic
 (`"word:{word}"`) — free-text, no catalog registration needed.
 """
 

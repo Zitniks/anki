@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
-from routers.dependencies import verify_password
+from auth_utils import verify_password
 from repositories import storage
 
 

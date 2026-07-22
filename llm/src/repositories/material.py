@@ -3,7 +3,7 @@
 from datetime import datetime
 from sqlalchemy import select, or_, cast, String
 
-from database import Material, MaterialLink
+from database import Material
 from repositories.base import BaseRepository
 from logger import db_logger
 
@@ -83,17 +83,3 @@ class MaterialRepository(BaseRepository[Material]):
             await session.commit()
             db_logger.info(f"db.material_update material_id={material_id}")
             return material.to_dict()
-
-
-class MaterialLinkRepository(BaseRepository[MaterialLink]):
-    model = MaterialLink
-
-    async def get_by_material(self, material_id: int) -> list[dict]:
-        """All links for a material."""
-        async with self._session_factory() as session:
-            result = await session.execute(
-                select(MaterialLink)
-                .where(MaterialLink.material_id == material_id)
-                .order_by(MaterialLink.created_at.asc()))
-            links = result.scalars().all()
-            return [link.to_dict() for link in links]

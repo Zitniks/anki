@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from sqlalchemy import select
 
 from database import async_session_factory, User
-from routers.dependencies import hash_password
+from auth_utils import hash_password
 from settings import settings
 
 

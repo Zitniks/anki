@@ -1,10 +1,10 @@
-"""Curriculum repositories: lessons taught and items to repeat."""
+"""Репозиторий пройденных уроков."""
 
 from datetime import datetime
 
 from sqlalchemy import select
 
-from database import Lesson, RepeatItem
+from database import Lesson
 from logger import db_logger
 from repositories.base import BaseRepository
 
@@ -40,36 +40,3 @@ class LessonRepository(BaseRepository[Lesson]):
             await session.commit()
             db_logger.info(f"db.lesson_update lesson_id={lesson_id}")
             return lesson.to_dict()
-
-
-class RepeatItemRepository(BaseRepository[RepeatItem]):
-    model = RepeatItem
-
-    async def get_by_project(self, project_id: str) -> list[dict]:
-        """All repeat items for a project, ordered by created_at desc."""
-        async with self._session_factory() as session:
-            result = await session.execute(
-                select(RepeatItem)
-                .where(RepeatItem.project_id == project_id)
-                .order_by(RepeatItem.created_at.desc())
-            )
-            items = result.scalars().all()
-            return [item.to_dict() for item in items]
-
-    async def update(self, item_id: int, data: dict) -> dict | None:
-        """Update repeat item fields."""
-        async with self._session_factory() as session:
-            result = await session.execute(
-                select(RepeatItem)
-                .where(RepeatItem.id == item_id)
-            )
-            item = result.scalar_one_or_none()
-            if not item:
-                return None
-
-            for key, value in data.items():
-                setattr(item, key, value)
-            item.updated_at = datetime.utcnow()
-            await session.commit()
-            db_logger.info(f"db.repeat_item_update item_id={item_id}")
-            return item.to_dict()

@@ -13,8 +13,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from settings import settings
 from logger import startup_logger, set_request_id
 
-from routers import ALL_ROUTERS
-
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Middleware to generate and track request IDs for log correlation"""
@@ -64,7 +62,7 @@ app.add_middleware(
 )
 
 
-# Health check endpoint - must be before routers with catch-all patterns
+# Health check endpoint
 @app.get("/health")
 async def health_check() -> dict[str, str | int]:
     """Health check endpoint"""
@@ -74,9 +72,6 @@ async def health_check() -> dict[str, str | int]:
 # Setup static files
 if settings.STATIC_PATH.exists():
     app.mount("/static", StaticFiles(directory=str(settings.STATIC_PATH)), name="static")
-
-for router in ALL_ROUTERS:
-    app.include_router(router)
 
 if __name__ == "__main__":
     import uvicorn
