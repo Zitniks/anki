@@ -78,10 +78,12 @@ func main() {
 	router.Static("/assets", "./web")
 	router.Static("/landing-assets", "./landing/dist")
 	noCacheJSONFile := func(path, file string) {
-		router.GET(path, func(c *gin.Context) {
+		handler := func(c *gin.Context) {
 			c.Header("Cache-Control", "no-cache")
 			c.File(file)
-		})
+		}
+		router.GET(path, handler)
+		router.HEAD(path, handler)
 	}
 	noCacheJSONFile("/theory_tenses.json", "./theory_tenses.json")
 	noCacheJSONFile("/word_topics.json", "./word_topics.json")
