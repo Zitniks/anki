@@ -257,7 +257,7 @@ $("enrich-btn").addEventListener("click", async () => {
     form.transcription.value = draft.transcription || "";
   } finally {
     btn.disabled = false;
-    btn.textContent = "✨ Заполнить через AI";
+    btn.textContent = "Заполнить";
   }
 });
 
@@ -655,7 +655,7 @@ async function lookupBookWord(word, spanEl) {
 }
 
 function renderReadingLookup(word, draft) {
-  const sourceLabel = draft.source === "rag" ? "готовый пример" : "пример от AI";
+  const sourceLabel = draft.source === "rag" ? "готовый пример" : "пример";
   const transcriptionHtml = draft.transcription
     ? `<div class="reading-lookup-transcription">${escapeHtml(draft.transcription)}</div>`
     : "";
@@ -1803,12 +1803,7 @@ async function loadAIStatus() {
     }
     const data = await res.json();
     state.aiReady = Boolean(data.ready);
-    if (data.ready) {
-      el.textContent = "AI подключён";
-      el.className = "chat-status online";
-    } else {
-      el.className = "chat-status hidden";
-    }
+    el.className = "chat-status hidden";
   } catch {
     state.aiReady = false;
     el.className = "chat-status hidden";
