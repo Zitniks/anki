@@ -17,7 +17,13 @@ from langgraph.prebuilt import ToolNode
 from langgraph.runtime import Runtime
 
 from adaptive.engine import decide as adaptive_decide
-from analytics.retrievers import ExampleRetriever, ExerciseRetriever, ExplanationRetriever, TutorRetriever
+from analytics.retrievers import (
+    ExampleRetriever,
+    ExerciseRetriever,
+    ExplanationRetriever,
+    TutorRetriever,
+    reciprocal_rank_fusion,
+)
 from chat.intent import classify_intent
 from chat.persistence import convert_to_langchain_messages
 from chat.prompts import SYSTEM_PROMPTS
@@ -127,19 +133,6 @@ def _route_or_refuse(state: TutorState) -> Literal["route", "refuse"]:
     return "route"
 
 
-def _reciprocal_rank_fusion(result_sets: list[list[Document]], k: int = 60) -> list[Document]:
-    """Merge multiple ranked ``Document`` lists into one, highest combined rank first."""
-    scores: dict[str, float] = {}
-    docs_by_key: dict[str, Document] = {}
-    for docs in result_sets:
-        for rank, doc in enumerate(docs):
-            key = doc.page_content
-            scores[key] = scores.get(key, 0.0) + 1.0 / (k + rank + 1)
-            docs_by_key.setdefault(key, doc)
-    ranked_keys = sorted(scores, key=lambda key: scores[key], reverse=True)
-    return [docs_by_key[key] for key in ranked_keys]
-
-
 def _format_documents(docs: list[Document], max_chars: int = 3000) -> str:
     """Assemble retrieved documents into a context block for LLM injection."""
     if not docs:
@@ -177,7 +170,7 @@ async def _route(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> di
 
     if route_data["mode"] == "ensemble":
         result_sets = await asyncio.gather(*(r.ainvoke(query) for r in retrievers))
-        docs = _reciprocal_rank_fusion(list(result_sets))
+        docs = reciprocal_rank_fusion(list(result_sets))
     else:
         docs = await retrievers[0].ainvoke(query)
 

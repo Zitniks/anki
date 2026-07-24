@@ -19,6 +19,24 @@ from analytics.knowledge_docs import search_explanations
 from analytics.rag import search as search_materials
 
 
+def reciprocal_rank_fusion(result_sets: list[list[Document]], k: int = 60) -> list[Document]:
+    """Merge multiple ranked ``Document`` lists into one, highest combined rank first.
+
+    Shared by ``chat/graph.py``'s ensemble routing and ``chat/search_tools.py``'s
+    ``search_all`` tool — both need "query every corpus, merge by rank" and must
+    not diverge into two separate implementations of the same fusion logic.
+    """
+    scores: dict[str, float] = {}
+    docs_by_key: dict[str, Document] = {}
+    for docs in result_sets:
+        for rank, doc in enumerate(docs):
+            key = doc.page_content
+            scores[key] = scores.get(key, 0.0) + 1.0 / (k + rank + 1)
+            docs_by_key.setdefault(key, doc)
+    ranked_keys = sorted(scores, key=lambda key: scores[key], reverse=True)
+    return [docs_by_key[key] for key in ranked_keys]
+
+
 class TutorRetriever(BaseRetriever):
     """Common contract for the tutor's per-corpus retrievers.
 
