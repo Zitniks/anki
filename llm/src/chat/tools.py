@@ -24,6 +24,9 @@ from youtube_transcript_api._errors import NoTranscriptFound, TranscriptsDisable
 
 from chat.state import TutorRuntimeContext
 from database import async_session_factory
+from grpc_svc import learn_write_client as learn_write
+from grpc_svc.enrich import enrich_word as enrich_word_draft
+from grpc_svc.session import ResolvedSession
 from logger import extract_logger, image_gen_logger, llm_logger
 from repositories import storage
 from settings import settings
@@ -106,6 +109,32 @@ class GetTopicProgressInput(BaseModel):
 
 class GetRecentLearningHistoryInput(BaseModel):
     days: int = Field(default=7, ge=1, le=90, description="За сколько последних дней вернуть историю (по умолчанию 7).")
+
+
+class CheckWordsInDeckInput(BaseModel):
+    words: list[str] = Field(description="Английские слова для проверки наличия в словаре студента.")
+
+
+class AddWordsToDeckInput(BaseModel):
+    words: list[str] = Field(
+        description="Английские слова в начальной форме для добавления в словарь студента "
+        "(без переводов — они будут сгенерированы автоматически).")
+    level: str = Field(default="B1", description="Уровень студента для перевода/примера: A1-C2.")
+
+
+class DeleteWordsFromDeckInput(BaseModel):
+    words: list[str] = Field(description="Английские слова для удаления из словаря студента.")
+
+
+class AddWordsFromTextInput(BaseModel):
+    vocabulary: list[str] = Field(
+        description="Сложные/незнакомые английские слова в начальной форме, извлечённые из текста студента.")
+
+
+class CreateCardsByTopicInput(BaseModel):
+    topic: str = Field(description="Тема/тег для подбора лексики, например 'путешествия', 'еда', 'бизнес'.")
+    count: int = Field(default=8, ge=1, le=20, description="Сколько слов подобрать по теме (по умолчанию 8).")
+    level: str = Field(default="B1", description="Уровень студента: A1-C2.")
 
 
 # ========== HELPERS ==========
@@ -441,7 +470,7 @@ async def extract_vocabulary_tool(
     vocabulary: list[str],
     runtime: ToolRuntime[TutorRuntimeContext],
 ) -> Command:
-    """Сохранить английские слова/фразы в словарь студента. Вызывай ТОЛЬКО когда репетитор явно просит запомнить/сохранить/добавить в словарь. НЕ вызывай автоматически по словам, просто встреченным в тексте или упражнении."""
+    """Сохранить английские слова/фразы в общую библиотеку репетитора (НЕ карточки Anki Lite — для того словаря используй add_words_to_deck/add_words_from_text). Вызывай ТОЛЬКО когда репетитор явно просит запомнить/сохранить/добавить в словарь. НЕ вызывай автоматически по словам, просто встреченным в тексте или упражнении."""
     ctx = runtime.context
     result = await storage.vocabulary.add_words(ctx.project_id, vocabulary)
 
@@ -574,6 +603,181 @@ async def get_recent_learning_history_tool(
         name = topic.removeprefix("word:")
         lines.append(f"- {name}: {stat['attempts']} попыток, {stat['correct']}/{stat['attempts']} верно")
     return "\n".join(lines)
+
+
+# ========== EPIC 4: WRITE TOOLS (reverse channel into Anki's own deck) ==========
+#
+# These call back into ankis' LearnWriteService (Epic 2's reverse channel) —
+# a write here lands directly in the student's real Go/ankis-db word deck,
+# not llm-db's own (unrelated) vocabulary table. Every call needs
+# ctx.anki_user_id, which is 0 for non-Anki/legacy sessions — all four tools
+# refuse up front when it's missing rather than writing to nobody's deck.
+
+
+def _require_anki_user(ctx: TutorRuntimeContext) -> int | None:
+    if not ctx.anki_user_id:
+        return None
+    return ctx.anki_user_id
+
+
+@tool("check_words_in_deck", args_schema=CheckWordsInDeckInput)
+async def check_words_in_deck_tool(
+    words: list[str],
+    runtime: ToolRuntime[TutorRuntimeContext],
+) -> str:
+    """Проверить, какие из перечисленных слов уже есть в словаре студента (антидубль). Вызывай перед добавлением новых слов, чтобы не создавать дубликаты."""
+    ctx = runtime.context
+    anki_user_id = _require_anki_user(ctx)
+    if anki_user_id is None:
+        return "Не удалось определить аккаунт Anki Lite — проверка недоступна."
+    try:
+        results = await learn_write.check_words_exist(anki_user_id, words)
+    except Exception as e:
+        llm_logger.error(f"tool.check_words_in_deck error={e}", exc_info=True)
+        return "Не удалось проверить словарь — сервис Anki Lite временно недоступен."
+
+    existing = [r["word"] for r in results if r["exists"]]
+    missing = [r["word"] for r in results if not r["exists"]]
+    parts = []
+    if existing:
+        parts.append(f"Уже в словаре: {', '.join(existing)}")
+    if missing:
+        parts.append(f"Отсутствуют: {', '.join(missing)}")
+    return "\n".join(parts) if parts else "Список слов пуст."
+
+
+async def _enrich_and_add(ctx: TutorRuntimeContext, anki_user_id: int, words: list[str], level: str) -> str:
+    """Shared by add_words_to_deck and add_words_from_text: dedupe against the
+    real deck, enrich each new word (translation/example/transcription), then
+    batch-add via the reverse channel."""
+    check = await learn_write.check_words_exist(anki_user_id, words)
+    new_words = [r["word"] for r in check if not r["exists"]]
+    already = [r["word"] for r in check if r["exists"]]
+
+    if not new_words:
+        return f"Все эти слова уже в словаре: {', '.join(already)}" if already else "Список слов пуст."
+
+    session = ResolvedSession(
+        user_id=str(ctx.user_id), project_id=ctx.project_id, chat_id=ctx.chat_id,
+        practice_chat_id="", anki_user_id=anki_user_id,
+    )
+    drafts = []
+    for word in new_words:
+        try:
+            enriched = await enrich_word_draft(session, word, level)
+        except Exception as e:
+            llm_logger.warning(f"tool.add_words enrich_failed word={word!r} error={e}")
+            enriched = {"translation": "", "example": "", "transcription": ""}
+        drafts.append({"word": word, **enriched})
+
+    results = await learn_write.add_words(anki_user_id, drafts)
+    added = [r["word"] for r in results if r["added"]]
+    failed = [r["word"] for r in results if not r["added"]]
+
+    parts = []
+    if added:
+        parts.append(f"Добавлено в словарь: {', '.join(added)}")
+    if already:
+        parts.append(f"Уже были в словаре: {', '.join(already)}")
+    if failed:
+        parts.append(f"Не удалось добавить: {', '.join(failed)}")
+    return "\n".join(parts)
+
+
+@tool("add_words_to_deck", args_schema=AddWordsToDeckInput)
+async def add_words_to_deck_tool(
+    words: list[str],
+    runtime: ToolRuntime[TutorRuntimeContext],
+    level: str = "B1",
+) -> str:
+    """Добавить конкретные английские слова в словарь студента (Anki Lite), с автоматическим переводом/примером/транскрипцией. Вызывай когда студент явно просит добавить/запомнить конкретные слова."""
+    ctx = runtime.context
+    anki_user_id = _require_anki_user(ctx)
+    if anki_user_id is None:
+        return "Не удалось определить аккаунт Anki Lite — добавление недоступно."
+    try:
+        return await _enrich_and_add(ctx, anki_user_id, words, level)
+    except Exception as e:
+        llm_logger.error(f"tool.add_words_to_deck error={e}", exc_info=True)
+        return "Не удалось добавить слова — сервис Anki Lite временно недоступен."
+
+
+@tool("delete_words_from_deck", args_schema=DeleteWordsFromDeckInput)
+async def delete_words_from_deck_tool(
+    words: list[str],
+    runtime: ToolRuntime[TutorRuntimeContext],
+) -> str:
+    """Удалить конкретные слова из словаря студента (Anki Lite). Вызывай только по явной просьбе студента удалить/убрать конкретные слова."""
+    ctx = runtime.context
+    anki_user_id = _require_anki_user(ctx)
+    if anki_user_id is None:
+        return "Не удалось определить аккаунт Anki Lite — удаление недоступно."
+    try:
+        deleted, missing = [], []
+        for word in words:
+            ok = await learn_write.delete_word(anki_user_id, word)
+            (deleted if ok else missing).append(word)
+    except Exception as e:
+        llm_logger.error(f"tool.delete_words_from_deck error={e}", exc_info=True)
+        return "Не удалось удалить слова — сервис Anki Lite временно недоступен."
+
+    parts = []
+    if deleted:
+        parts.append(f"Удалено: {', '.join(deleted)}")
+    if missing:
+        parts.append(f"Не найдено в словаре: {', '.join(missing)}")
+    return "\n".join(parts) if parts else "Список слов пуст."
+
+
+@tool("add_words_from_text", args_schema=AddWordsFromTextInput)
+async def add_words_from_text_tool(
+    vocabulary: list[str],
+    runtime: ToolRuntime[TutorRuntimeContext],
+) -> str:
+    """Добавить в СЛОВАРЬ ANKI LITE (карточки для повторения, не общую библиотеку репетитора) сложные/незнакомые слова, извлечённые из абзаца текста, который прислал студент. Сначала сам выдели из текста слова уровня выше A2 в начальной форме на английском, затем вызови этот инструмент с этим списком — перевод/пример/транскрипция подтянутся автоматически, дубликаты отфильтруются. Не путать с extract_vocabulary (та пишет в отдельную библиотеку репетитора, не в Anki Lite)."""
+    ctx = runtime.context
+    anki_user_id = _require_anki_user(ctx)
+    if anki_user_id is None:
+        return "Не удалось определить аккаунт Anki Lite — добавление недоступно."
+    if not vocabulary:
+        return "В тексте не нашлось подходящих слов для добавления."
+    try:
+        return await _enrich_and_add(ctx, anki_user_id, vocabulary, "B1")
+    except Exception as e:
+        llm_logger.error(f"tool.add_words_from_text error={e}", exc_info=True)
+        return "Не удалось добавить слова — сервис Anki Lite временно недоступен."
+
+
+class _TopicWordList(BaseModel):
+    words: list[str] = Field(description="English words in base form, no translations.")
+
+
+_topic_word_generator = settings.llm_cheap.with_structured_output(_TopicWordList, method="function_calling")
+
+
+@tool("create_cards_by_topic", args_schema=CreateCardsByTopicInput)
+async def create_cards_by_topic_tool(
+    topic: str,
+    runtime: ToolRuntime[TutorRuntimeContext],
+    count: int = 8,
+    level: str = "B1",
+) -> str:
+    """Создать карточки словаря по теме (например 'путешествия', 'бизнес', 'еда') — сам подберёт релевантные теме английские слова нужного уровня и добавит их в словарь Anki Lite. Вызывай когда студент просит слова/карточки по теме, а не по конкретному тексту."""
+    ctx = runtime.context
+    anki_user_id = _require_anki_user(ctx)
+    if anki_user_id is None:
+        return "Не удалось определить аккаунт Anki Lite — добавление недоступно."
+    try:
+        prompt = (f"List {count} English vocabulary words (base form, no translations) for a "
+                  f"{level}-level student studying the topic '{topic}'. Common, useful, everyday "
+                  f"words a learner would actually need for this topic.")
+        picked: _TopicWordList = await _topic_word_generator.ainvoke(prompt)
+        if not picked.words:
+            return f"Не удалось подобрать слова по теме «{topic}»."
+        return await _enrich_and_add(ctx, anki_user_id, picked.words[:count], level)
+    except Exception as e:
+        llm_logger.error(f"tool.create_cards_by_topic error={e}", exc_info=True)
+        return "Не удалось создать карточки — сервис Anki Lite временно недоступен."
 
 
 @tool("list_materials", args_schema=ListMaterialsInput)
@@ -709,6 +913,11 @@ TOOLS = [
     get_weak_topics_tool,
     get_topic_progress_tool,
     get_recent_learning_history_tool,
+    check_words_in_deck_tool,
+    add_words_to_deck_tool,
+    delete_words_from_deck_tool,
+    add_words_from_text_tool,
+    create_cards_by_topic_tool,
 ]
 if settings.STOCK_PHOTO_ENABLED:
     TOOLS.append(search_stock_photos_tool)
