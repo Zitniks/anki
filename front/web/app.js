@@ -1825,10 +1825,21 @@ async function loadAIStatus() {
   }
 }
 
-function renderChatMessages() {
+// `opts.scrollToLastMessageTop`: use when a NEW assistant message just started
+// (its bubble is still empty/short) — shows the start of the answer instead of
+// its growing tail. `opts.preserveScroll`: use while streaming updates the same
+// last message's text — keeps whatever position scrollToLastMessageTop set,
+// instead of re-snapping to the bottom on every chunk (which is the bug this
+// fixes: without it, a long streamed answer keeps yanking the view down to
+// whatever's currently arriving, so the reader never sees where it began).
+// Default (neither flag): scroll to bottom, e.g. opening the widget or a
+// non-streamed message landing — same behavior as before this change.
+function renderChatMessages(opts = {}) {
   const box = $("chat-messages");
   if (!box) return;
+  const prevScrollTop = box.scrollTop;
   box.innerHTML = "";
+  let lastRow = null;
   state.chatMessages.forEach((msg) => {
     const row = document.createElement("div");
     row.className = `chat-row chat-row-${msg.role}`;
@@ -1853,8 +1864,16 @@ function renderChatMessages() {
     }
     row.appendChild(bubble);
     box.appendChild(row);
+    lastRow = row;
   });
-  box.scrollTop = box.scrollHeight;
+
+  if (opts.preserveScroll) {
+    box.scrollTop = prevScrollTop;
+  } else if (opts.scrollToLastMessageTop && lastRow) {
+    box.scrollTop = lastRow.offsetTop;
+  } else {
+    box.scrollTop = box.scrollHeight;
+  }
 }
 
 const PRACTICE_INTENT_RE =
@@ -1928,7 +1947,7 @@ async function onChatSubmit(e) {
   state.chatStreaming = true;
   $("chat-send").disabled = true;
   state.chatMessages.push({ role: "assistant", text: "" });
-  renderChatMessages();
+  renderChatMessages({ scrollToLastMessageTop: true });
 
   const assistantIndex = state.chatMessages.length - 1;
   try {
@@ -1955,7 +1974,7 @@ async function onChatSubmit(e) {
           const event = JSON.parse(line.slice(6));
           if (event.type === "content" && event.content) {
             state.chatMessages[assistantIndex].text += event.content;
-            renderChatMessages();
+            renderChatMessages({ preserveScroll: true });
           }
           if (event.type === "status" && event.status) {
             $("chat-status").textContent = event.status;
@@ -1972,11 +1991,11 @@ async function onChatSubmit(e) {
     }
     if (!state.chatMessages[assistantIndex].text) {
       state.chatMessages[assistantIndex].text = "(пустой ответ)";
-      renderChatMessages();
+      renderChatMessages({ preserveScroll: true });
     }
   } catch (err) {
     state.chatMessages[assistantIndex].text = `Ошибка: ${err?.message || "не удалось получить ответ"}`;
-    renderChatMessages();
+    renderChatMessages({ preserveScroll: true });
     showError(err?.message || "Ошибка чата");
   } finally {
     state.chatStreaming = false;
