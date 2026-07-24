@@ -754,7 +754,9 @@ input[type="checkbox"] {
 }
 
 /* ============================================================
-   Table (dictionary)
+   Table (still used by markdown-rendered tables inside chat bubbles /
+   theory content — .chat-bubble-html table, .theory-topic-content table —
+   the dictionary itself moved to a card list below)
    ============================================================ */
 #search {
     width: 100%;
@@ -795,6 +797,86 @@ tbody tr:last-child td {
 
 tbody tr:hover {
     background: var(--hover-wash);
+}
+
+/* ============================================================
+   Word list (dictionary) — cards instead of a table: no date column,
+   transcription sits under the word, swipe-to-delete on touch.
+   ============================================================ */
+.word-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.word-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+}
+
+.word-card-delete-panel {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 1.5rem;
+    background: var(--error);
+    color: #fff;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.word-card-content {
+    position: relative;
+    display: block;
+    width: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 2.5rem 0.85rem 1rem;
+    box-shadow: var(--shadow-inset);
+    /* pan-y: the browser keeps handling vertical page scroll; our own touch
+       handlers only ever act on the horizontal component of the gesture. */
+    touch-action: pan-y;
+}
+
+.word-card-word {
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.word-card-transcription {
+    margin-top: 0.15rem;
+    color: var(--fg-muted);
+    font-size: 0.85rem;
+}
+
+.word-card-translation {
+    margin-top: 0.35rem;
+    color: var(--fg-muted);
+}
+
+.word-card-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--fg-muted);
+}
+
+.word-card-close:hover {
+    color: var(--error);
+    border-color: var(--error);
 }
 
 .hidden {

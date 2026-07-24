@@ -165,7 +165,7 @@ $("profile-form").addEventListener("submit", async (e) => {
 $("go-train").addEventListener("click", () => switchScreen("training"));
 $("train-start").addEventListener("click", () => initTrainingSession($("train-count").value));
 $("train-restart").addEventListener("click", showTrainingSetup);
-$("search").addEventListener("input", renderWordsTable);
+$("search").addEventListener("input", renderWordsList);
 $("speak-btn").addEventListener("click", () => speakText(state.sessionWord?.word));
 $("typing-check").addEventListener("click", onTypingSubmit);
 $("typing-next").addEventListener("click", onTypingNext);
@@ -735,24 +735,36 @@ async function loadWords() {
     return;
   }
   state.words = await res.json();
-  renderWordsTable();
+  renderWordsList();
 }
 
-function renderWordsTable() {
+function renderWordsList() {
   const query = $("search").value.trim().toLowerCase();
   const rows = state.words.filter((w) => w.word.toLowerCase().includes(query));
-  const tbody = $("words-table");
-  tbody.innerHTML = "";
+  const list = $("words-list");
+  list.innerHTML = "";
   for (const word of rows) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escapeHtml(word.word)}</td>
-      <td>${escapeHtml(word.translation)}</td>
-      <td>${escapeHtml(word.transcription || "")}</td>
-      <td>${new Date(word.created_at).toLocaleDateString()}</td>
-      <td><button data-id="${word.id}">Удалить</button></td>
+    const card = document.createElement("div");
+    card.className = "word-card";
+    card.innerHTML = `
+      <div class="word-card-delete-panel" aria-hidden="true">Удалить</div>
+      <div class="word-card-content">
+        <button type="button" class="word-card-close" aria-label="Удалить слово">&times;</button>
+        <div class="word-card-word"></div>
+        <div class="word-card-transcription"></div>
+        <div class="word-card-translation"></div>
+      </div>
     `;
-    tr.querySelector("button").addEventListener("click", async () => {
+    card.querySelector(".word-card-word").textContent = word.word;
+    const transcriptionEl = card.querySelector(".word-card-transcription");
+    if (word.transcription) {
+      transcriptionEl.textContent = word.transcription;
+    } else {
+      transcriptionEl.remove();
+    }
+    card.querySelector(".word-card-translation").textContent = word.translation;
+
+    const deleteWord = async () => {
       const res = await apiFetch(`/words/${word.id}`, { method: "DELETE" });
       if (!res.ok) {
         showError(await readError(res));
@@ -760,9 +772,80 @@ function renderWordsTable() {
       }
       showInfo("Слово удалено");
       await Promise.all([loadWords(), loadStats()]);
-    });
-    tbody.appendChild(tr);
+    };
+    card.querySelector(".word-card-close").addEventListener("click", deleteWord);
+    card.querySelector(".word-card-delete-panel").addEventListener("click", deleteWord);
+    attachSwipeToDelete(card.querySelector(".word-card-content"), deleteWord);
+    list.appendChild(card);
   }
+}
+
+// Swipe-left-to-delete for touch devices (Gmail/Mail-style list row gesture).
+// Purely additive — the always-visible × button (and the revealed delete
+// panel, tappable on any pointer type) still work without touch.
+const SWIPE_REVEAL_PX = 88;
+const SWIPE_AUTO_DELETE_RATIO = 0.6; // dragged past 60% of the card's width -> delete immediately
+
+function attachSwipeToDelete(contentEl, onDelete) {
+  let startX = 0;
+  let startY = 0;
+  let currentX = 0;
+  let dragging = false;
+  let horizontalLock = false;
+
+  contentEl.addEventListener(
+    "touchstart",
+    (e) => {
+      const t = e.touches[0];
+      startX = t.clientX;
+      startY = t.clientY;
+      currentX = 0;
+      dragging = true;
+      horizontalLock = false;
+      contentEl.style.transition = "none";
+    },
+    { passive: true },
+  );
+
+  contentEl.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!dragging) return;
+      const t = e.touches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      if (!horizontalLock) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        horizontalLock = Math.abs(dx) > Math.abs(dy);
+        // Mostly-vertical gesture on this row — let the page scroll instead.
+        if (!horizontalLock) {
+          dragging = false;
+          return;
+        }
+      }
+      currentX = Math.min(0, dx);
+      contentEl.style.transform = `translateX(${currentX}px)`;
+    },
+    { passive: true },
+  );
+
+  const endDrag = () => {
+    if (!dragging) return;
+    dragging = false;
+    contentEl.style.transition = "transform 0.2s ease";
+    const cardWidth = contentEl.getBoundingClientRect().width;
+    if (Math.abs(currentX) > cardWidth * SWIPE_AUTO_DELETE_RATIO) {
+      contentEl.style.transform = `translateX(-${cardWidth}px)`;
+      onDelete();
+    } else if (Math.abs(currentX) > SWIPE_REVEAL_PX / 2) {
+      contentEl.style.transform = `translateX(-${SWIPE_REVEAL_PX}px)`;
+    } else {
+      contentEl.style.transform = "translateX(0)";
+    }
+  };
+
+  contentEl.addEventListener("touchend", endDrag);
+  contentEl.addEventListener("touchcancel", endDrag);
 }
 
 function switchAddMode(mode) {
