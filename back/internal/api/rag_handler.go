@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"anki/internal/auth"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -36,7 +38,7 @@ func (h *Handler) ExplainError(c *gin.Context) {
 		return
 	}
 
-	result, err := h.repetitor.ExplainError(c.Request.Context(), req.Word, req.Expected, req.Got, req.Sentence)
+	result, err := h.repetitor.ExplainError(c.Request.Context(), auth.UserIDFromContext(c), req.Word, req.Expected, req.Got, req.Sentence)
 	if err != nil {
 		h.serverError(c, err)
 		return
@@ -61,7 +63,7 @@ func (h *Handler) WeakTopics(c *gin.Context) {
 		}
 	}
 
-	topics, err := h.repetitor.GetWeakTopics(c.Request.Context(), limit)
+	topics, err := h.repetitor.GetWeakTopics(c.Request.Context(), auth.UserIDFromContext(c), limit)
 	if err != nil {
 		h.serverError(c, err)
 		return

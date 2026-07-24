@@ -28,16 +28,18 @@ class Credentials(_message.Message):
     def __init__(self, email: _Optional[str] = ..., password: _Optional[str] = ...) -> None: ...
 
 class Session(_message.Message):
-    __slots__ = ("credentials", "project_id", "chat_id", "practice_chat_id")
+    __slots__ = ("credentials", "project_id", "chat_id", "practice_chat_id", "anki_user_id")
     CREDENTIALS_FIELD_NUMBER: _ClassVar[int]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
     CHAT_ID_FIELD_NUMBER: _ClassVar[int]
     PRACTICE_CHAT_ID_FIELD_NUMBER: _ClassVar[int]
+    ANKI_USER_ID_FIELD_NUMBER: _ClassVar[int]
     credentials: Credentials
     project_id: str
     chat_id: str
     practice_chat_id: str
-    def __init__(self, credentials: _Optional[_Union[Credentials, _Mapping]] = ..., project_id: _Optional[str] = ..., chat_id: _Optional[str] = ..., practice_chat_id: _Optional[str] = ...) -> None: ...
+    anki_user_id: int
+    def __init__(self, credentials: _Optional[_Union[Credentials, _Mapping]] = ..., project_id: _Optional[str] = ..., chat_id: _Optional[str] = ..., practice_chat_id: _Optional[str] = ..., anki_user_id: _Optional[int] = ...) -> None: ...
 
 class EnsureSessionRequest(_message.Message):
     __slots__ = ("credentials", "project_id", "chat_id", "practice_chat_id")
@@ -244,3 +246,77 @@ class GetWeakTopicsResponse(_message.Message):
     TOPICS_FIELD_NUMBER: _ClassVar[int]
     topics: _containers.RepeatedCompositeFieldContainer[WeakTopic]
     def __init__(self, topics: _Optional[_Iterable[_Union[WeakTopic, _Mapping]]] = ...) -> None: ...
+
+class WordDraft(_message.Message):
+    __slots__ = ("word", "translation", "example", "transcription")
+    WORD_FIELD_NUMBER: _ClassVar[int]
+    TRANSLATION_FIELD_NUMBER: _ClassVar[int]
+    EXAMPLE_FIELD_NUMBER: _ClassVar[int]
+    TRANSCRIPTION_FIELD_NUMBER: _ClassVar[int]
+    word: str
+    translation: str
+    example: str
+    transcription: str
+    def __init__(self, word: _Optional[str] = ..., translation: _Optional[str] = ..., example: _Optional[str] = ..., transcription: _Optional[str] = ...) -> None: ...
+
+class AddWordsRequest(_message.Message):
+    __slots__ = ("user_id", "words")
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    WORDS_FIELD_NUMBER: _ClassVar[int]
+    user_id: int
+    words: _containers.RepeatedCompositeFieldContainer[WordDraft]
+    def __init__(self, user_id: _Optional[int] = ..., words: _Optional[_Iterable[_Union[WordDraft, _Mapping]]] = ...) -> None: ...
+
+class AddWordResult(_message.Message):
+    __slots__ = ("word", "added", "reason")
+    WORD_FIELD_NUMBER: _ClassVar[int]
+    ADDED_FIELD_NUMBER: _ClassVar[int]
+    REASON_FIELD_NUMBER: _ClassVar[int]
+    word: str
+    added: bool
+    reason: str
+    def __init__(self, word: _Optional[str] = ..., added: _Optional[bool] = ..., reason: _Optional[str] = ...) -> None: ...
+
+class AddWordsResponse(_message.Message):
+    __slots__ = ("results",)
+    RESULTS_FIELD_NUMBER: _ClassVar[int]
+    results: _containers.RepeatedCompositeFieldContainer[AddWordResult]
+    def __init__(self, results: _Optional[_Iterable[_Union[AddWordResult, _Mapping]]] = ...) -> None: ...
+
+class DeleteWordRequest(_message.Message):
+    __slots__ = ("user_id", "word")
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    WORD_FIELD_NUMBER: _ClassVar[int]
+    user_id: int
+    word: str
+    def __init__(self, user_id: _Optional[int] = ..., word: _Optional[str] = ...) -> None: ...
+
+class DeleteWordResponse(_message.Message):
+    __slots__ = ("deleted",)
+    DELETED_FIELD_NUMBER: _ClassVar[int]
+    deleted: bool
+    def __init__(self, deleted: _Optional[bool] = ...) -> None: ...
+
+class CheckWordsExistRequest(_message.Message):
+    __slots__ = ("user_id", "words")
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    WORDS_FIELD_NUMBER: _ClassVar[int]
+    user_id: int
+    words: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, user_id: _Optional[int] = ..., words: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class WordExistCheck(_message.Message):
+    __slots__ = ("word", "exists", "translation")
+    WORD_FIELD_NUMBER: _ClassVar[int]
+    EXISTS_FIELD_NUMBER: _ClassVar[int]
+    TRANSLATION_FIELD_NUMBER: _ClassVar[int]
+    word: str
+    exists: bool
+    translation: str
+    def __init__(self, word: _Optional[str] = ..., exists: _Optional[bool] = ..., translation: _Optional[str] = ...) -> None: ...
+
+class CheckWordsExistResponse(_message.Message):
+    __slots__ = ("results",)
+    RESULTS_FIELD_NUMBER: _ClassVar[int]
+    results: _containers.RepeatedCompositeFieldContainer[WordExistCheck]
+    def __init__(self, results: _Optional[_Iterable[_Union[WordExistCheck, _Mapping]]] = ...) -> None: ...

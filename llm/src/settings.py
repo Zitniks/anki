@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     GRPC_ENABLED: bool = True
     GRPC_HOST: str = "0.0.0.0"
     GRPC_PORT: int = 50051
+    # Reverse channel (Epic 2): ankis' LearnWriteService — the opposite
+    # direction from GRPC_HOST/PORT above (this process is the client here).
+    LEARN_WRITE_GRPC_ADDR: str = "localhost:50052"
     DOMAIN: str = "localhost"  # Domain for CORS configuration
 
     # Limits (0 = unlimited)

@@ -27,6 +27,7 @@ type Repository interface {
 	ListWords(ctx context.Context, userID int64) ([]model.Word, error)
 	AddWord(ctx context.Context, userID int64, w model.Word, now time.Time) (model.Word, error)
 	DeleteWord(ctx context.Context, userID int64, id int64) error
+	GetWordsByText(ctx context.Context, userID int64, words []string) ([]model.Word, error)
 	NextReviewWord(ctx context.Context, userID int64, now time.Time, cardType model.CardType) (*model.ReviewCard, error)
 	CountDueByType(ctx context.Context, userID int64, now time.Time, cardType model.CardType) (int, error)
 	CountDueCloze(ctx context.Context, userID int64, now time.Time) (int, error)
@@ -48,6 +49,8 @@ type Repository interface {
 	GetUserByID(ctx context.Context, id int64) (*model.User, error)
 	SetUserLevel(ctx context.Context, userID int64, level string) error
 	UpdateUserProfile(ctx context.Context, userID int64, name, email string) error
+	MarkTopicCompleted(ctx context.Context, userID int64, topicID string) error
+	GetCompletedTopicIDs(ctx context.Context, userID int64) ([]string, error)
 }
 
 type WordService struct {
@@ -212,6 +215,31 @@ func (s *WordService) AddWord(ctx context.Context, userID int64, w model.Word) (
 	return created, nil
 }
 
+// GetWordsByText returns the caller's own words matching any of the given
+// texts (case-insensitive) — used by the reverse-channel (LearnWriteService)
+// for delete-by-text and existence checks.
+func (s *WordService) GetWordsByText(ctx context.Context, userID int64, words []string) ([]model.Word, error) {
+	return s.repo.GetWordsByText(ctx, userID, words)
+}
+
+// DeleteWordByText deletes the caller's word matching this text (case-
+// insensitive), if any. Returns false (not an error) when no such word
+// exists — the reverse channel's DeleteWord RPC treats "nothing to delete"
+// as a normal outcome, not a failure.
+func (s *WordService) DeleteWordByText(ctx context.Context, userID int64, word string) (bool, error) {
+	matches, err := s.repo.GetWordsByText(ctx, userID, []string{word})
+	if err != nil {
+		return false, err
+	}
+	if len(matches) == 0 {
+		return false, nil
+	}
+	if err := s.DeleteWord(ctx, userID, matches[0].ID); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (s *WordService) DeleteWord(ctx context.Context, userID int64, id int64) error {
 	if id <= 0 {
 		return ErrInvalidInput
@@ -298,6 +326,14 @@ func (s *WordService) SubmitReview(ctx context.Context, userID int64, wordID int
 
 func (s *WordService) Stats(ctx context.Context, userID int64) (model.Stats, error) {
 	return s.repo.Stats(ctx, userID, time.Now().UTC())
+}
+
+func (s *WordService) MarkTopicCompleted(ctx context.Context, userID int64, topicID string) error {
+	return s.repo.MarkTopicCompleted(ctx, userID, topicID)
+}
+
+func (s *WordService) GetCompletedTopicIDs(ctx context.Context, userID int64) ([]string, error) {
+	return s.repo.GetCompletedTopicIDs(ctx, userID)
 }
 
 func (s *WordService) RoundStats(ctx context.Context, userID int64) (model.RoundStats, error) {

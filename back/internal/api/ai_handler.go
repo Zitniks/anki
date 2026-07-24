@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"anki/internal/auth"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -57,7 +59,8 @@ func (h *Handler) AIChatStream(c *gin.Context) {
 		return
 	}
 
-	err := h.repetitor.StreamChat(c.Request.Context(), req.Message, func(chunk []byte) error {
+	userID := auth.UserIDFromContext(c)
+	err := h.repetitor.StreamChat(c.Request.Context(), userID, req.Message, func(chunk []byte) error {
 		if _, wErr := c.Writer.Write(chunk); wErr != nil {
 			return wErr
 		}

@@ -434,3 +434,181 @@ var TutorService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Metadata: "tutor/v1/tutor.proto",
 }
+
+const (
+	LearnWriteService_AddWords_FullMethodName        = "/tutor.v1.LearnWriteService/AddWords"
+	LearnWriteService_DeleteWord_FullMethodName      = "/tutor.v1.LearnWriteService/DeleteWord"
+	LearnWriteService_CheckWordsExist_FullMethodName = "/tutor.v1.LearnWriteService/CheckWordsExist"
+)
+
+// LearnWriteServiceClient is the client API for LearnWriteService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type LearnWriteServiceClient interface {
+	AddWords(ctx context.Context, in *AddWordsRequest, opts ...grpc.CallOption) (*AddWordsResponse, error)
+	DeleteWord(ctx context.Context, in *DeleteWordRequest, opts ...grpc.CallOption) (*DeleteWordResponse, error)
+	CheckWordsExist(ctx context.Context, in *CheckWordsExistRequest, opts ...grpc.CallOption) (*CheckWordsExistResponse, error)
+}
+
+type learnWriteServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewLearnWriteServiceClient(cc grpc.ClientConnInterface) LearnWriteServiceClient {
+	return &learnWriteServiceClient{cc}
+}
+
+func (c *learnWriteServiceClient) AddWords(ctx context.Context, in *AddWordsRequest, opts ...grpc.CallOption) (*AddWordsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddWordsResponse)
+	err := c.cc.Invoke(ctx, LearnWriteService_AddWords_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *learnWriteServiceClient) DeleteWord(ctx context.Context, in *DeleteWordRequest, opts ...grpc.CallOption) (*DeleteWordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteWordResponse)
+	err := c.cc.Invoke(ctx, LearnWriteService_DeleteWord_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *learnWriteServiceClient) CheckWordsExist(ctx context.Context, in *CheckWordsExistRequest, opts ...grpc.CallOption) (*CheckWordsExistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckWordsExistResponse)
+	err := c.cc.Invoke(ctx, LearnWriteService_CheckWordsExist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// LearnWriteServiceServer is the server API for LearnWriteService service.
+// All implementations must embed UnimplementedLearnWriteServiceServer
+// for forward compatibility.
+type LearnWriteServiceServer interface {
+	AddWords(context.Context, *AddWordsRequest) (*AddWordsResponse, error)
+	DeleteWord(context.Context, *DeleteWordRequest) (*DeleteWordResponse, error)
+	CheckWordsExist(context.Context, *CheckWordsExistRequest) (*CheckWordsExistResponse, error)
+	mustEmbedUnimplementedLearnWriteServiceServer()
+}
+
+// UnimplementedLearnWriteServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedLearnWriteServiceServer struct{}
+
+func (UnimplementedLearnWriteServiceServer) AddWords(context.Context, *AddWordsRequest) (*AddWordsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddWords not implemented")
+}
+func (UnimplementedLearnWriteServiceServer) DeleteWord(context.Context, *DeleteWordRequest) (*DeleteWordResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteWord not implemented")
+}
+func (UnimplementedLearnWriteServiceServer) CheckWordsExist(context.Context, *CheckWordsExistRequest) (*CheckWordsExistResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckWordsExist not implemented")
+}
+func (UnimplementedLearnWriteServiceServer) mustEmbedUnimplementedLearnWriteServiceServer() {}
+func (UnimplementedLearnWriteServiceServer) testEmbeddedByValue()                           {}
+
+// UnsafeLearnWriteServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to LearnWriteServiceServer will
+// result in compilation errors.
+type UnsafeLearnWriteServiceServer interface {
+	mustEmbedUnimplementedLearnWriteServiceServer()
+}
+
+func RegisterLearnWriteServiceServer(s grpc.ServiceRegistrar, srv LearnWriteServiceServer) {
+	// If the following call panics, it indicates UnimplementedLearnWriteServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&LearnWriteService_ServiceDesc, srv)
+}
+
+func _LearnWriteService_AddWords_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddWordsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LearnWriteServiceServer).AddWords(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LearnWriteService_AddWords_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LearnWriteServiceServer).AddWords(ctx, req.(*AddWordsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LearnWriteService_DeleteWord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteWordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LearnWriteServiceServer).DeleteWord(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LearnWriteService_DeleteWord_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LearnWriteServiceServer).DeleteWord(ctx, req.(*DeleteWordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LearnWriteService_CheckWordsExist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckWordsExistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LearnWriteServiceServer).CheckWordsExist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LearnWriteService_CheckWordsExist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LearnWriteServiceServer).CheckWordsExist(ctx, req.(*CheckWordsExistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// LearnWriteService_ServiceDesc is the grpc.ServiceDesc for LearnWriteService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var LearnWriteService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "tutor.v1.LearnWriteService",
+	HandlerType: (*LearnWriteServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "AddWords",
+			Handler:    _LearnWriteService_AddWords_Handler,
+		},
+		{
+			MethodName: "DeleteWord",
+			Handler:    _LearnWriteService_DeleteWord_Handler,
+		},
+		{
+			MethodName: "CheckWordsExist",
+			Handler:    _LearnWriteService_CheckWordsExist_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "tutor/v1/tutor.proto",
+}

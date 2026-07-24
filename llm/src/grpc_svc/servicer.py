@@ -17,7 +17,9 @@ from grpc_svc.enrich import enrich_word
 from grpc_svc.events import publish_event
 from grpc_svc.explain import explain_error
 from grpc_svc.pb.tutor.v1 import tutor_pb2, tutor_pb2_grpc
-from grpc_svc.practice import generate_practice
+from grpc_svc.exercise_check import check_answers
+from grpc_svc.practice import generate_practice, generate_topic_practice
+from grpc_svc.tense_drill import generate_tense_drill
 from grpc_svc.session import ResolvedSession, resolve_session
 from analytics.example_bank import search_examples
 from analytics.knowledge_docs import search_explanations
@@ -92,10 +94,14 @@ class TutorGrpcServicer(tutor_pb2_grpc.TutorServiceServicer):
     ) -> tutor_pb2.PracticeResponse:
         session = await self._resolve_request_session(request.session, context)
         words = [w.strip() for w in request.words if w.strip()]
-        if not words:
-            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "words required")
+        topic_content = request.topic_content.strip()
+        if not words and not topic_content:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "words or topic_content required")
         try:
-            result = await generate_practice(session, words, request.level or "B1")
+            if topic_content:
+                result = await generate_topic_practice(request.topic_title, topic_content, request.level or "B1")
+            else:
+                result = await generate_practice(session, words, request.level or "B1")
             questions = [
                 tutor_pb2.PracticeQuestion(
                     prompt=q["prompt"],
@@ -257,6 +263,58 @@ class TutorGrpcServicer(tutor_pb2_grpc.TutorServiceServicer):
             chat_logger.opt(exception=True).error(f"grpc.get_weak_topics error={exc}")
             await context.abort(grpc.StatusCode.INTERNAL, str(exc))
 
+    async def CheckAnswers(
+        self,
+        request: tutor_pb2.CheckAnswersRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> tutor_pb2.CheckAnswersResponse:
+        await self._resolve_request_session(request.session, context)
+        user_answers = list(request.user_answers)
+        if not user_answers or not request.exercise_context.strip():
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "exercise_context and user_answers required")
+        try:
+            result = await check_answers(request.exercise_context, request.answer_key, user_answers)
+            results = [
+                tutor_pb2.AnswerCheckItem(
+                    correct=r["correct"],
+                    correct_answer=r["correct_answer"],
+                    explanation=r["explanation"],
+                )
+                for r in result["results"]
+            ]
+            return tutor_pb2.CheckAnswersResponse(results=results)
+        except Exception as exc:
+            chat_logger.opt(exception=True).error(f"grpc.check_answers error={exc}")
+            await context.abort(grpc.StatusCode.INTERNAL, str(exc))
+
+    async def GenerateTenseDrill(
+        self,
+        request: tutor_pb2.GenerateTenseDrillRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> tutor_pb2.GenerateTenseDrillResponse:
+        await self._resolve_request_session(request.session, context)
+        topics = [
+            {"title": t.title, "level": t.level, "content": t.content}
+            for t in request.topics
+        ]
+        if len(topics) < 2:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "at least 2 topics required")
+        count = request.count or 5
+        try:
+            result = await generate_tense_drill(topics, request.level or "B1", count)
+            items = [
+                tutor_pb2.TenseDrillItem(
+                    sentence_ru=i["sentence_ru"],
+                    correct_tense=i["correct_tense"],
+                    reference_translation=i["reference_translation"],
+                )
+                for i in result["items"]
+            ]
+            return tutor_pb2.GenerateTenseDrillResponse(items=items)
+        except Exception as exc:
+            chat_logger.opt(exception=True).error(f"grpc.generate_tense_drill error={exc}")
+            await context.abort(grpc.StatusCode.INTERNAL, str(exc))
+
     async def _resolve_request_session(
         self,
         proto_session: tutor_pb2.Session,
@@ -272,6 +330,7 @@ class TutorGrpcServicer(tutor_pb2_grpc.TutorServiceServicer):
                 proto_session.project_id,
                 proto_session.chat_id,
                 proto_session.practice_chat_id,
+                proto_session.anki_user_id,
             )
         except PermissionError as exc:
             await context.abort(grpc.StatusCode.UNAUTHENTICATED, str(exc))
@@ -288,6 +347,7 @@ class TutorGrpcServicer(tutor_pb2_grpc.TutorServiceServicer):
             chat_id=chat_id,
             project_id=session.project_id,
             user_id=UUID(session.user_id),
+            anki_user_id=session.anki_user_id,
             history=loaded.history,
             documents_context=loaded.documents_context,
             system_prompt_key=loaded.system_prompt_key,

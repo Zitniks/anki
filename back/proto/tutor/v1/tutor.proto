@@ -13,11 +13,21 @@ message Credentials {
 }
 
 // Resolved session: user + project + chat ids.
+//
+// anki_user_id identifies the specific Anki Lite account this call is on
+// behalf of. Every Anki Lite user shares one repetitor service account
+// (Credentials), so without this field llm-service has no way to tell them
+// apart — it would (and, before this field existed, did) collapse every
+// Anki user's chat history, BKT mastery, and learning events into one
+// shared project. llm-service uses this to look up (or create) a distinct
+// project per Anki user; 0 means "not supplied" (old caller), which falls
+// back to the single shared project for backward compatibility.
 message Session {
   Credentials credentials = 1;
   string project_id = 2;
   string chat_id = 3;
   string practice_chat_id = 4;
+  int64 anki_user_id = 5;
 }
 
 message EnsureSessionRequest {
@@ -161,4 +171,65 @@ service TutorService {
   rpc PublishEvent(PublishEventRequest) returns (PublishEventResponse);
   rpc ExplainError(ExplainErrorRequest) returns (ExplainErrorResponse);
   rpc GetWeakTopics(GetWeakTopicsRequest) returns (GetWeakTopicsResponse);
+}
+
+// ===========================================================================
+// Reverse channel (Epic 2): llm-service is the CLIENT here, ankis (back/) is
+// the SERVER. Lets the chat agent read/write a specific Anki user's own
+// vocabulary deck on their behalf, mid-conversation. Deliberately plain unary
+// RPCs (topology "A" from IMPROVEMENTS_SPEC.md) rather than a callback woven
+// into the existing Chat stream — no correlation/interrupt-resume machinery
+// needed, easy to reason about and test in isolation.
+// ===========================================================================
+
+message WordDraft {
+  string word = 1;
+  string translation = 2;
+  string example = 3;
+  string transcription = 4;
+}
+
+message AddWordsRequest {
+  int64 user_id = 1;
+  repeated WordDraft words = 2;
+}
+
+message AddWordResult {
+  string word = 1;
+  bool added = 2;
+  string reason = 3;   // set when added=false, e.g. "already exists", "invalid"
+}
+
+message AddWordsResponse {
+  repeated AddWordResult results = 1;
+}
+
+message DeleteWordRequest {
+  int64 user_id = 1;
+  string word = 2;
+}
+
+message DeleteWordResponse {
+  bool deleted = 1;   // false if no such word existed for this user
+}
+
+message CheckWordsExistRequest {
+  int64 user_id = 1;
+  repeated string words = 2;
+}
+
+message WordExistCheck {
+  string word = 1;
+  bool exists = 2;
+  string translation = 3;   // populated only when exists=true
+}
+
+message CheckWordsExistResponse {
+  repeated WordExistCheck results = 1;
+}
+
+service LearnWriteService {
+  rpc AddWords(AddWordsRequest) returns (AddWordsResponse);
+  rpc DeleteWord(DeleteWordRequest) returns (DeleteWordResponse);
+  rpc CheckWordsExist(CheckWordsExistRequest) returns (CheckWordsExistResponse);
 }

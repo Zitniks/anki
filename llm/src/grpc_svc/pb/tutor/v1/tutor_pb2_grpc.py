@@ -446,3 +446,161 @@ class TutorService:
             timeout,
             metadata,
             _registered_method=True)
+
+
+class LearnWriteServiceStub:
+    """Missing associated documentation comment in .proto file."""
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.AddWords = channel.unary_unary(
+                '/tutor.v1.LearnWriteService/AddWords',
+                request_serializer=tutor_dot_v1_dot_tutor__pb2.AddWordsRequest.SerializeToString,
+                response_deserializer=tutor_dot_v1_dot_tutor__pb2.AddWordsResponse.FromString,
+                _registered_method=True)
+        self.DeleteWord = channel.unary_unary(
+                '/tutor.v1.LearnWriteService/DeleteWord',
+                request_serializer=tutor_dot_v1_dot_tutor__pb2.DeleteWordRequest.SerializeToString,
+                response_deserializer=tutor_dot_v1_dot_tutor__pb2.DeleteWordResponse.FromString,
+                _registered_method=True)
+        self.CheckWordsExist = channel.unary_unary(
+                '/tutor.v1.LearnWriteService/CheckWordsExist',
+                request_serializer=tutor_dot_v1_dot_tutor__pb2.CheckWordsExistRequest.SerializeToString,
+                response_deserializer=tutor_dot_v1_dot_tutor__pb2.CheckWordsExistResponse.FromString,
+                _registered_method=True)
+
+
+class LearnWriteServiceServicer:
+    """Missing associated documentation comment in .proto file."""
+
+    def AddWords(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteWord(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CheckWordsExist(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_LearnWriteServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'AddWords': grpc.unary_unary_rpc_method_handler(
+                    servicer.AddWords,
+                    request_deserializer=tutor_dot_v1_dot_tutor__pb2.AddWordsRequest.FromString,
+                    response_serializer=tutor_dot_v1_dot_tutor__pb2.AddWordsResponse.SerializeToString,
+            ),
+            'DeleteWord': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteWord,
+                    request_deserializer=tutor_dot_v1_dot_tutor__pb2.DeleteWordRequest.FromString,
+                    response_serializer=tutor_dot_v1_dot_tutor__pb2.DeleteWordResponse.SerializeToString,
+            ),
+            'CheckWordsExist': grpc.unary_unary_rpc_method_handler(
+                    servicer.CheckWordsExist,
+                    request_deserializer=tutor_dot_v1_dot_tutor__pb2.CheckWordsExistRequest.FromString,
+                    response_serializer=tutor_dot_v1_dot_tutor__pb2.CheckWordsExistResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'tutor.v1.LearnWriteService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('tutor.v1.LearnWriteService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class LearnWriteService:
+    """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def AddWords(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/tutor.v1.LearnWriteService/AddWords',
+            tutor_dot_v1_dot_tutor__pb2.AddWordsRequest.SerializeToString,
+            tutor_dot_v1_dot_tutor__pb2.AddWordsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DeleteWord(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/tutor.v1.LearnWriteService/DeleteWord',
+            tutor_dot_v1_dot_tutor__pb2.DeleteWordRequest.SerializeToString,
+            tutor_dot_v1_dot_tutor__pb2.DeleteWordResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CheckWordsExist(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/tutor.v1.LearnWriteService/CheckWordsExist',
+            tutor_dot_v1_dot_tutor__pb2.CheckWordsExistRequest.SerializeToString,
+            tutor_dot_v1_dot_tutor__pb2.CheckWordsExistResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)

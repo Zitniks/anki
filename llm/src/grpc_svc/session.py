@@ -15,6 +15,7 @@ class ResolvedSession:
     project_id: str
     chat_id: str
     practice_chat_id: str
+    anki_user_id: int = 0
 
 
 async def authenticate(email: str, password: str) -> dict:
@@ -27,12 +28,49 @@ async def authenticate(email: str, password: str) -> dict:
     return user
 
 
-async def ensure_project(user_id: str, project_id: str | None) -> str:
+async def ensure_project(user_id: str, project_id: str | None, anki_user_id: int | None = None) -> str:
+    """Find or create the llm-db project this session should use.
+
+    Parameters
+    ----------
+    user_id : str
+        The repetitor service-account user id (same for every Anki caller —
+        does NOT identify which Anki Lite account is chatting).
+    project_id : str or None
+        Explicit project id from the caller, if it already knows one.
+    anki_user_id : int or None
+        The specific Anki Lite account id (Session.anki_user_id), when the
+        caller supplies it. Every Anki user shares the same `user_id` above,
+        so without this every Anki account would collapse into one shared
+        project. `None`/0 means an old caller that hasn't been updated yet —
+        falls back to the single legacy shared "Anki Lite" project so this
+        stays backward compatible during a rolling deploy.
+    """
     if project_id:
         project = await storage.projects.get(project_id)
         if project and project["user_id"] == user_id:
             return project_id
 
+    if anki_user_id:
+        existing = await storage.projects.get_by_anki_user_id(anki_user_id)
+        if existing:
+            return existing["id"]
+        new_id = str(uuid.uuid4())
+        await storage.projects.create({
+            "id": new_id,
+            "user_id": user_id,
+            "name": f"Anki Lite (user {anki_user_id})",
+            "student_name": "Self",
+            "student_level": "B1",
+            "description": "Vocabulary practice via Anki Lite",
+            "notes": None,
+            "anki_user_id": anki_user_id,
+        })
+        await storage.chats.create({"id": str(uuid.uuid4()), "project_id": new_id, "name": "Anki Tutor"})
+        return new_id
+
+    # Legacy path (anki_user_id not supplied): one project shared by every
+    # Anki caller, matched by name since there's no better key available.
     projects = await storage.projects.get_all(user_id=user_id)
     for project in projects:
         if project.get("name") == "Anki Lite":
@@ -76,9 +114,10 @@ async def resolve_session(
     project_id: str = "",
     chat_id: str = "",
     practice_chat_id: str = "",
+    anki_user_id: int = 0,
 ) -> ResolvedSession:
     user = await authenticate(email, password)
-    pid = await ensure_project(user["id"], project_id or None)
+    pid = await ensure_project(user["id"], project_id or None, anki_user_id or None)
     cid = await ensure_chat(pid, chat_id or None, "Anki Tutor")
     pcid = await ensure_chat(pid, practice_chat_id or None, "Anki Practice")
     return ResolvedSession(
@@ -86,4 +125,5 @@ async def resolve_session(
         project_id=pid,
         chat_id=cid,
         practice_chat_id=pcid,
+        anki_user_id=anki_user_id,
     )

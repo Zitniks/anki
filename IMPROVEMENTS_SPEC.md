@@ -143,10 +143,31 @@
 3. Пробросить токен/`user_id` текущей сессии из входящего gRPC-контекста в исходящий вызов.
 
 **Acceptance:**
-- [ ] Python может инициировать запись в Go в рамках обработки одного запроса пользователя.
-- [ ] `user_id`/сессия корректно пробрасывается — запись идёт в словарь именно текущего пользователя.
-- [ ] При недоступности Go — агент возвращает понятную ошибку, не падает.
-- [ ] Integration-тест: Python вызывает reverse-метод → запись появляется в learn-db.
+- [x] Python может инициировать запись в Go в рамках обработки одного запроса пользователя.
+- [x] `user_id`/сессия корректно пробрасывается — запись идёт в словарь именно текущего пользователя.
+- [x] При недоступности Go — агент получает штатную gRPC-ошибку (grpc.aio.AioRpcError), не падает молча; конвертация в дружелюбное сообщение — задача самих write-tools (Epic 4, ещё не реализованы).
+- [x] Integration-тест: Python вызывает reverse-метод → запись появляется в learn-db (реально в ankis-db/Postgres — см. статус).
+
+**Статус (2026-07-24): РЕАЛИЗОВАН вариант A (Bidirectional), проверен end-to-end на реальном стеке.**
+
+Выбрана топология A — отдельный `LearnWriteService`, Go поднимает второй gRPC-сервер (`LEARN_WRITE_GRPC_ADDR`, по умолчанию `:50052`), Python — обычный клиент, три unary RPC (`AddWords`, `DeleteWord`, `CheckWordsExist`). Без callback-в-стриме, без interrupt/resume — стандартные unary-вызовы, тестируются в изоляции.
+
+**Предпосылка, вскрывшаяся по ходу работы (не была очевидна из текста спеки) — пришлось чинить первой:** весь чат раньше был **глобальным на всех пользователей Anki Lite** — один `project_id`/`chat_id` на всех, заданный один раз при старте Go-процесса (единый сервис-аккаунт `REPETITOR_EMAIL/PASSWORD`). Без разделения по пользователю reverse-канал физически не мог бы писать «именно текущему пользователю» — потребовалась per-user изоляция:
+- `Session.anki_user_id` — новое поле в proto (обе копии, `back/proto` и `llm/proto`), пробрасывается через `Client.session(userID)` и ВСЕ методы `grpc_client.go` (`StreamChat`, `PublishEvent`, `GetWeakTopics`, `EnrichWord`, `ExplainError`, `GeneratePractice`, `GenerateTopicPractice`, `CheckAnswers`, `GenerateTenseDrill`, `SearchRag`), из хендлеров через `auth.UserIDFromContext(c)`.
+- Фоновый `event_publisher.go` не имеет доступа к JWT (не HTTP-запрос) — user_id достаётся через уже существующий join `event_outbox` → `words.user_id` (миграция не понадобилась, только правка SELECT).
+- Python: `projects.anki_user_id` — новая колонка (alembic `0010`, unique partial index), `ensure_project()`/`resolve_session()` теперь находят-или-создают отдельный llm-db Project на Anki-пользователя; без `anki_user_id` (0/не задан) — старое поведение (общий проект "Anki Lite"), обратная совместимость сохранена.
+- `anki_user_id` прокинут и в `TutorRuntimeContext` — доступен будущим write-tools (Epic 4).
+
+**Реализация reverse-канала:**
+- `back/internal/learnwrite/server.go` (новый пакет — избежал цикла импортов `ai↔service`, если бы разместил в `internal/ai`) — `AddWords` переиспользует существующую валидацию `WordService.AddWord` (дубликаты/невалидные слова → `added=false, reason=...`, не ошибка), `DeleteWord`/`CheckWordsExist` — новый `Repository.GetWordsByText` (поиск по тексту регистронезависимо, нужен был лишь для этого).
+- `llm/src/grpc_svc/learn_write_client.py` — тонкий клиент, ленивая инициализация канала.
+
+**Проверено вживую, не только юнит-тестами на моках:**
+1. Полный прогон `AddWords → CheckWordsExist(true) → AddWords(тот же слово) → added=false,"already exists" → DeleteWord → CheckWordsExist(false) → DeleteWord снова → deleted=false` — против реального Postgres (`ankis-db`), реальный Go-сервер на `:50052`.
+2. Изоляция: два разных `anki_user_id` → два разных `project_id` в llm-db; тот же `anki_user_id` дважды → тот же `project_id` (идемпотентно); без `anki_user_id` → старый общий project_id (обратная совместимость).
+3. Регрессия: полный `/ai/chat/stream` через гостевого пользователя по-прежнему стримит нормальный ответ — per-user изоляция не сломала основной чат.
+
+**Известное упрощение:** нет отдельной транспортной аутентификации между Go и Python на этом новом порту (как и у существующего Python→Go канала — оба рассчитаны на внутреннюю docker-сеть, не публичный интернет). Если `LearnWriteService` когда-то будет доступен вне доверенной сети — нужен отдельный слой авторизации.
 
 ---
 

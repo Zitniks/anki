@@ -10,6 +10,7 @@ from sqlalchemy import (
     Text,
     DateTime,
     Integer,
+    BigInteger,
     ForeignKey,
     Boolean,
     Float,
@@ -76,6 +77,11 @@ class Project(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     notes = Column(String(500), nullable=True)
+    # Distinct Anki Lite account this project belongs to (Epic 2) — all Anki
+    # users share one repetitor service account, so this is what actually
+    # separates their chat/mastery/vocabulary from each other. NULL for
+    # non-Anki (web-tutor) projects.
+    anki_user_id = Column(BigInteger, nullable=True, unique=True)
 
     # Relationships
     user = relationship("User", back_populates="projects")
@@ -94,6 +100,7 @@ class Project(Base):
             "student_name": self.student_name,
             "student_level": self.student_level,
             "description": self.description,
+            "anki_user_id": self.anki_user_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

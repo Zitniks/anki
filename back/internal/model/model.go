@@ -114,6 +114,7 @@ type ActivityDay struct {
 
 type OutboxEvent struct {
 	ID             int64
+	UserID         int64
 	Word           string
 	CardType       CardType
 	Correct        bool

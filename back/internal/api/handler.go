@@ -64,6 +64,22 @@ type practiceGenerateResponse struct {
 	Sources   []string              `json:"sources,omitempty"`
 }
 
+type theoryQuizRequest struct {
+	TopicTitle   string `json:"topic_title"`
+	TopicContent string `json:"topic_content"`
+	Level        string `json:"level"`
+}
+
+type checkExerciseRequest struct {
+	ExerciseContext string   `json:"exercise_context"`
+	AnswerKey       string   `json:"answer_key"`
+	UserAnswers     []string `json:"user_answers"`
+}
+
+type checkExerciseResponse struct {
+	Results []ai.AnswerCheckItem `json:"results"`
+}
+
 func (h *Handler) ListWords(c *gin.Context) {
 	userID := auth.UserIDFromContext(c)
 	words, err := h.service.ListWords(c.Request.Context(), userID)
@@ -213,7 +229,7 @@ func (h *Handler) ReviewCard(c *gin.Context) {
 		return
 	}
 	if round == 4 && card.Skip && h.repetitor != nil && h.repetitor.Ready() {
-		h.fillClozeFromRag(c.Request.Context(), card)
+		h.fillClozeFromRag(c.Request.Context(), userID, card)
 	}
 	c.JSON(http.StatusOK, card)
 }
@@ -221,8 +237,8 @@ func (h *Handler) ReviewCard(c *gin.Context) {
 // fillClozeFromRag tries to source a live cloze sentence from Example RAG when the
 // word has no static example. Leaves card.Skip as-is if RAG has nothing usable either
 // — same graceful degradation as today, just with an extra chance to avoid it.
-func (h *Handler) fillClozeFromRag(ctx context.Context, card *model.ReviewCard) {
-	resp, err := h.repetitor.SearchRag(ctx, card.Word, tutorpb.RagCorpus_RAG_CORPUS_EXAMPLE, 1)
+func (h *Handler) fillClozeFromRag(ctx context.Context, userID int64, card *model.ReviewCard) {
+	resp, err := h.repetitor.SearchRag(ctx, userID, card.Word, tutorpb.RagCorpus_RAG_CORPUS_EXAMPLE, 1)
 	if err != nil || len(resp.Chunks) == 0 {
 		return
 	}
@@ -365,7 +381,7 @@ func (h *Handler) PracticeGenerate(c *gin.Context) {
 	req.WordList = words
 
 	if h.repetitor != nil && h.repetitor.Ready() {
-		generated, err := h.repetitor.GeneratePractice(c.Request.Context(), words, req.Level)
+		generated, err := h.repetitor.GeneratePractice(c.Request.Context(), auth.UserIDFromContext(c), words, req.Level)
 		if err == nil {
 			c.JSON(http.StatusOK, practiceGenerateResponse{
 				Questions: generated.Questions,
@@ -378,6 +394,165 @@ func (h *Handler) PracticeGenerate(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, buildPracticeFallback(req.Word))
+}
+
+// TheoryQuiz generates a 5-question quiz grounded in a theory topic's own
+// content (not a word list) for the theory screen's inline "check yourself".
+func (h *Handler) TheoryQuiz(c *gin.Context) {
+	var req theoryQuizRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+	req.TopicTitle = strings.TrimSpace(req.TopicTitle)
+	req.TopicContent = strings.TrimSpace(req.TopicContent)
+	req.Level = strings.TrimSpace(req.Level)
+	if req.Level == "" {
+		req.Level = "B1"
+	}
+	if req.TopicTitle == "" || req.TopicContent == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "topic_title and topic_content are required"})
+		return
+	}
+
+	if h.repetitor == nil || !h.repetitor.Ready() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI репетитор временно недоступен"})
+		return
+	}
+	generated, err := h.repetitor.GenerateTopicPractice(c.Request.Context(), auth.UserIDFromContext(c), req.TopicTitle, req.TopicContent, req.Level)
+	if err != nil {
+		h.logger.Warn("theory quiz generate", zap.Error(err))
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "не удалось сгенерировать квиз"})
+		return
+	}
+	c.JSON(http.StatusOK, practiceGenerateResponse{
+		Questions: generated.Questions,
+		Source:    generated.Source,
+		Sources:   generated.Sources,
+	})
+}
+
+// CheckExercise grades a theory topic's fill-in-the-blank exercise against
+// its known answer key, explaining any wrong answers.
+func (h *Handler) CheckExercise(c *gin.Context) {
+	var req checkExerciseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+	req.ExerciseContext = strings.TrimSpace(req.ExerciseContext)
+	if req.ExerciseContext == "" || len(req.UserAnswers) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "exercise_context and user_answers are required"})
+		return
+	}
+
+	if h.repetitor == nil || !h.repetitor.Ready() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI репетитор временно недоступен"})
+		return
+	}
+	results, err := h.repetitor.CheckAnswers(c.Request.Context(), auth.UserIDFromContext(c), req.ExerciseContext, req.AnswerKey, req.UserAnswers)
+	if err != nil {
+		h.logger.Warn("check exercise", zap.Error(err))
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "не удалось проверить ответы"})
+		return
+	}
+	c.JSON(http.StatusOK, checkExerciseResponse{Results: results})
+}
+
+type drillTopicRequest struct {
+	Title   string `json:"title"`
+	Level   string `json:"level"`
+	Content string `json:"content"`
+}
+
+type drillGenerateRequest struct {
+	Topics []drillTopicRequest `json:"topics"`
+	Level  string              `json:"level"`
+	Count  int32               `json:"count"`
+}
+
+type drillGenerateResponse struct {
+	Items []ai.DrillItem `json:"items"`
+}
+
+// TheoryDrillGenerate generates a mixed-tense Russian-to-English translation
+// drill from the caller-supplied (already-studied) theory topics.
+func (h *Handler) TheoryDrillGenerate(c *gin.Context) {
+	var req drillGenerateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+	req.Level = strings.TrimSpace(req.Level)
+	if req.Level == "" {
+		req.Level = "B1"
+	}
+	if len(req.Topics) < 2 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "at least 2 topics are required"})
+		return
+	}
+	count := req.Count
+	if count <= 0 {
+		count = 5
+	}
+	if count > 10 {
+		count = 10
+	}
+
+	if h.repetitor == nil || !h.repetitor.Ready() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI репетитор временно недоступен"})
+		return
+	}
+	topics := make([]ai.DrillTopic, 0, len(req.Topics))
+	for _, t := range req.Topics {
+		topics = append(topics, ai.DrillTopic{Title: t.Title, Level: t.Level, Content: t.Content})
+	}
+	items, err := h.repetitor.GenerateTenseDrill(c.Request.Context(), auth.UserIDFromContext(c), topics, req.Level, count)
+	if err != nil {
+		h.logger.Warn("theory drill generate", zap.Error(err))
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "не удалось сгенерировать тренировку"})
+		return
+	}
+	c.JSON(http.StatusOK, drillGenerateResponse{Items: items})
+}
+
+type topicProgressRequest struct {
+	TopicID string `json:"topic_id"`
+}
+
+type topicProgressResponse struct {
+	TopicIDs []string `json:"topic_ids"`
+}
+
+// MarkTopicCompleted records that the logged-in user finished a theory topic's quiz.
+func (h *Handler) MarkTopicCompleted(c *gin.Context) {
+	userID := auth.UserIDFromContext(c)
+	var req topicProgressRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+	req.TopicID = strings.TrimSpace(req.TopicID)
+	if req.TopicID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "topic_id is required"})
+		return
+	}
+	if err := h.service.MarkTopicCompleted(c.Request.Context(), userID, req.TopicID); err != nil {
+		h.serverError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+// GetTopicProgress lists the theory topic ids the logged-in user has completed.
+func (h *Handler) GetTopicProgress(c *gin.Context) {
+	userID := auth.UserIDFromContext(c)
+	ids, err := h.service.GetCompletedTopicIDs(c.Request.Context(), userID)
+	if err != nil {
+		h.serverError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, topicProgressResponse{TopicIDs: ids})
 }
 
 func (h *Handler) handleServiceErr(c *gin.Context, err error) {

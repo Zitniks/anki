@@ -157,6 +157,38 @@ func ensureWordCards(ctx context.Context, tx pgx.Tx, wordID int64, now time.Time
 	return nil
 }
 
+// GetWordsByText returns the caller's own words matching any of the given
+// texts (case-insensitive exact match) — used by the reverse-channel
+// (LearnWriteService) to resolve a word's id for delete-by-text, and to
+// check existence without adding.
+func (r *Repository) GetWordsByText(ctx context.Context, userID int64, words []string) ([]model.Word, error) {
+	if len(words) == 0 {
+		return nil, nil
+	}
+	lowered := make([]string, len(words))
+	for i, w := range words {
+		lowered[i] = strings.ToLower(strings.TrimSpace(w))
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, word, translation, COALESCE(example, ''), COALESCE(transcription, ''), created_at
+		FROM words
+		WHERE user_id = $1 AND lower(word) = ANY($2)`, userID, lowered)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	found := make([]model.Word, 0, len(words))
+	for rows.Next() {
+		var w model.Word
+		if err := rows.Scan(&w.ID, &w.Word, &w.Translation, &w.Example, &w.Transcription, &w.CreatedAt); err != nil {
+			return nil, err
+		}
+		found = append(found, w)
+	}
+	return found, rows.Err()
+}
+
 func (r *Repository) DeleteWord(ctx context.Context, userID int64, id int64) error {
 	tag, err := r.pool.Exec(ctx, `DELETE FROM words WHERE id = $1 AND user_id = $2`, id, userID)
 	if err != nil {
@@ -422,6 +454,36 @@ func (r *Repository) SaveReviewResult(ctx context.Context, cardID int64, rating 
 	return tx.Commit(ctx)
 }
 
+// MarkTopicCompleted records that a user finished the AI quiz for a theory
+// topic (idempotent — repeat completions of the same topic are no-ops).
+func (r *Repository) MarkTopicCompleted(ctx context.Context, userID int64, topicID string) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO theory_topic_progress(user_id, topic_id)
+		VALUES ($1, $2)
+		ON CONFLICT (user_id, topic_id) DO NOTHING
+	`, userID, topicID)
+	return err
+}
+
+// GetCompletedTopicIDs returns the theory topic ids a user has finished the quiz for.
+func (r *Repository) GetCompletedTopicIDs(ctx context.Context, userID int64) ([]string, error) {
+	rows, err := r.pool.Query(ctx, `SELECT topic_id FROM theory_topic_progress WHERE user_id = $1`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := make([]string, 0)
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
 func (r *Repository) Stats(ctx context.Context, userID int64, now time.Time) (model.Stats, error) {
 	var stats model.Stats
 	if err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM words WHERE user_id = $1`, userID).Scan(&stats.TotalWords); err != nil {
@@ -578,7 +640,7 @@ func (r *Repository) EnqueueEvent(ctx context.Context, wordID int64, cardType mo
 
 func (r *Repository) FetchUnpublishedEvents(ctx context.Context, limit int, maxAttempts int) ([]model.OutboxEvent, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT o.id, w.word, o.card_type, o.correct, o.response_time_ms
+		SELECT o.id, w.user_id, w.word, o.card_type, o.correct, o.response_time_ms
 		FROM event_outbox o
 		JOIN words w ON w.id = o.word_id
 		WHERE o.published_at IS NULL AND o.publish_attempts < $1
@@ -594,7 +656,7 @@ func (r *Repository) FetchUnpublishedEvents(ctx context.Context, limit int, maxA
 	for rows.Next() {
 		var e model.OutboxEvent
 		var cardType string
-		if err := rows.Scan(&e.ID, &e.Word, &cardType, &e.Correct, &e.ResponseTimeMS); err != nil {
+		if err := rows.Scan(&e.ID, &e.UserID, &e.Word, &cardType, &e.Correct, &e.ResponseTimeMS); err != nil {
 			return nil, err
 		}
 		e.CardType = model.CardType(cardType)

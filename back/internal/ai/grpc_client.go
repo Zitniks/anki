@@ -58,6 +58,27 @@ type PracticeResult struct {
 	Sources   []string           `json:"sources,omitempty"`
 }
 
+// AnswerCheckItem is the verdict for one blank in a checked exercise.
+type AnswerCheckItem struct {
+	Correct       bool   `json:"correct"`
+	CorrectAnswer string `json:"correct_answer"`
+	Explanation   string `json:"explanation"`
+}
+
+// DrillTopic is one already-studied tense the mixed-tense drill can draw on.
+type DrillTopic struct {
+	Title   string `json:"title"`
+	Level   string `json:"level"`
+	Content string `json:"content"`
+}
+
+// DrillItem is one generated Russian-to-English tense-drill sentence.
+type DrillItem struct {
+	SentenceRu           string `json:"sentence_ru"`
+	CorrectTense         string `json:"correct_tense"`
+	ReferenceTranslation string `json:"reference_translation"`
+}
+
 // EnrichResult is the AI-generated word draft returned to the frontend.
 type EnrichResult struct {
 	Translation   string `json:"translation"`
@@ -206,23 +227,29 @@ func (c *Client) credentials() *tutorpb.Credentials {
 	}
 }
 
-func (c *Client) session() *tutorpb.Session {
+// session builds the per-call Session sent to repetitor. userID is the
+// specific Anki Lite account this call is on behalf of (0 for calls with no
+// authenticated user, e.g. none currently) — every Anki user shares the same
+// Credentials, so without AnkiUserId, repetitor has no way to tell them
+// apart (see Session's doc comment in tutor.proto).
+func (c *Client) session(userID int64) *tutorpb.Session {
 	return &tutorpb.Session{
 		Credentials:    c.credentials(),
 		ProjectId:      c.projectID,
 		ChatId:         c.chatID,
 		PracticeChatId: c.practiceChatID,
+		AnkiUserId:     userID,
 	}
 }
 
 // StreamChat proxies gRPC chat events as SSE frames for the browser.
-func (c *Client) StreamChat(ctx context.Context, message string, write func([]byte) error) error {
+func (c *Client) StreamChat(ctx context.Context, userID int64, message string, write func([]byte) error) error {
 	if !c.Ready() {
 		return errors.New(c.Status().Error)
 	}
 
 	stream, err := c.rpc.Chat(ctx, &tutorpb.ChatRequest{
-		Session: c.session(),
+		Session: c.session(userID),
 		Message: message,
 	})
 	if err != nil {
@@ -253,12 +280,12 @@ func (c *Client) StreamChat(ctx context.Context, message string, write func([]by
 }
 
 // GeneratePractice calls repetitor unary RPC with RAG + LLM.
-func (c *Client) GeneratePractice(ctx context.Context, words []string, level string) (PracticeResult, error) {
+func (c *Client) GeneratePractice(ctx context.Context, userID int64, words []string, level string) (PracticeResult, error) {
 	if !c.Ready() {
 		return PracticeResult{}, errors.New(c.Status().Error)
 	}
 	resp, err := c.rpc.GeneratePractice(ctx, &tutorpb.PracticeRequest{
-		Session: c.session(),
+		Session: c.session(userID),
 		Words:   words,
 		Level:   level,
 	})
@@ -281,13 +308,105 @@ func (c *Client) GeneratePractice(ctx context.Context, words []string, level str
 	}, nil
 }
 
+// GenerateTopicPractice calls repetitor unary RPC grounded in a theory topic's own
+// content instead of a word list (used by the theory screen's inline quiz).
+func (c *Client) GenerateTopicPractice(ctx context.Context, userID int64, topicTitle, topicContent, level string) (PracticeResult, error) {
+	if !c.Ready() {
+		return PracticeResult{}, errors.New(c.Status().Error)
+	}
+	resp, err := c.rpc.GeneratePractice(ctx, &tutorpb.PracticeRequest{
+		Session:      c.session(userID),
+		Level:        level,
+		TopicTitle:   topicTitle,
+		TopicContent: topicContent,
+	})
+	if err != nil {
+		return PracticeResult{}, err
+	}
+	questions := make([]PracticeQuestion, 0, len(resp.Questions))
+	for _, q := range resp.Questions {
+		questions = append(questions, PracticeQuestion{
+			Prompt:       q.Prompt,
+			Options:      q.Options,
+			CorrectIndex: q.CorrectIndex,
+			Explanation:  q.Explanation,
+		})
+	}
+	return PracticeResult{
+		Questions: questions,
+		Source:    resp.Source,
+		Sources:   resp.RagSources,
+	}, nil
+}
+
+// CheckAnswers asks repetitor to grade a theory exercise's typed answers against
+// its known answer key and explain any mistakes (used by the theory screen's
+// inline "Проверить" button on the verbatim lesson exercises).
+func (c *Client) CheckAnswers(ctx context.Context, userID int64, exerciseContext, answerKey string, userAnswers []string) ([]AnswerCheckItem, error) {
+	if !c.Ready() {
+		return nil, errors.New(c.Status().Error)
+	}
+	resp, err := c.rpc.CheckAnswers(ctx, &tutorpb.CheckAnswersRequest{
+		Session:         c.session(userID),
+		ExerciseContext: exerciseContext,
+		AnswerKey:       answerKey,
+		UserAnswers:     userAnswers,
+	})
+	if err != nil {
+		return nil, err
+	}
+	results := make([]AnswerCheckItem, 0, len(resp.Results))
+	for _, r := range resp.Results {
+		results = append(results, AnswerCheckItem{
+			Correct:       r.Correct,
+			CorrectAnswer: r.CorrectAnswer,
+			Explanation:   r.Explanation,
+		})
+	}
+	return results, nil
+}
+
+// GenerateTenseDrill asks repetitor for a mixed-tense Russian-to-English translation
+// drill, drawn only from the given (already-studied) topics.
+func (c *Client) GenerateTenseDrill(ctx context.Context, userID int64, topics []DrillTopic, level string, count int32) ([]DrillItem, error) {
+	if !c.Ready() {
+		return nil, errors.New(c.Status().Error)
+	}
+	pbTopics := make([]*tutorpb.TenseDrillTopic, 0, len(topics))
+	for _, t := range topics {
+		pbTopics = append(pbTopics, &tutorpb.TenseDrillTopic{
+			Title:   t.Title,
+			Level:   t.Level,
+			Content: t.Content,
+		})
+	}
+	resp, err := c.rpc.GenerateTenseDrill(ctx, &tutorpb.GenerateTenseDrillRequest{
+		Session: c.session(userID),
+		Topics:  pbTopics,
+		Level:   level,
+		Count:   count,
+	})
+	if err != nil {
+		return nil, err
+	}
+	items := make([]DrillItem, 0, len(resp.Items))
+	for _, i := range resp.Items {
+		items = append(items, DrillItem{
+			SentenceRu:           i.SentenceRu,
+			CorrectTense:         i.CorrectTense,
+			ReferenceTranslation: i.ReferenceTranslation,
+		})
+	}
+	return items, nil
+}
+
 // PublishEvent sends one review answer to repetitor as a learning event (BKT/ALS input).
-func (c *Client) PublishEvent(ctx context.Context, word string, correct bool, responseTimeMs, attempts int, cardType, difficulty string) error {
+func (c *Client) PublishEvent(ctx context.Context, userID int64, word string, correct bool, responseTimeMs, attempts int, cardType, difficulty string) error {
 	if !c.Ready() {
 		return errors.New(c.Status().Error)
 	}
 	_, err := c.rpc.PublishEvent(ctx, &tutorpb.PublishEventRequest{
-		Session:        c.session(),
+		Session:        c.session(userID),
 		Word:           word,
 		Correct:        correct,
 		ResponseTimeMs: int32(responseTimeMs),
@@ -299,12 +418,12 @@ func (c *Client) PublishEvent(ctx context.Context, word string, correct bool, re
 }
 
 // ExplainError asks repetitor to explain why a training answer was wrong.
-func (c *Client) ExplainError(ctx context.Context, word, expected, got, sentence string) (ExplainResult, error) {
+func (c *Client) ExplainError(ctx context.Context, userID int64, word, expected, got, sentence string) (ExplainResult, error) {
 	if !c.Ready() {
 		return ExplainResult{}, errors.New(c.Status().Error)
 	}
 	resp, err := c.rpc.ExplainError(ctx, &tutorpb.ExplainErrorRequest{
-		Session:  c.session(),
+		Session:  c.session(userID),
 		Word:     word,
 		Expected: expected,
 		Got:      got,
@@ -320,12 +439,12 @@ func (c *Client) ExplainError(ctx context.Context, word, expected, got, sentence
 }
 
 // GetWeakTopics returns the project's weakest word-topics from repetitor mastery.
-func (c *Client) GetWeakTopics(ctx context.Context, limit int32) ([]WeakTopic, error) {
+func (c *Client) GetWeakTopics(ctx context.Context, userID int64, limit int32) ([]WeakTopic, error) {
 	if !c.Ready() {
 		return nil, errors.New(c.Status().Error)
 	}
 	resp, err := c.rpc.GetWeakTopics(ctx, &tutorpb.GetWeakTopicsRequest{
-		Session: c.session(),
+		Session: c.session(userID),
 		Limit:   limit,
 	})
 	if err != nil {
@@ -339,12 +458,12 @@ func (c *Client) GetWeakTopics(ctx context.Context, limit int32) ([]WeakTopic, e
 }
 
 // EnrichWord calls repetitor to draft translation/example/transcription for a word.
-func (c *Client) EnrichWord(ctx context.Context, word, level string) (EnrichResult, error) {
+func (c *Client) EnrichWord(ctx context.Context, userID int64, word, level string) (EnrichResult, error) {
 	if !c.Ready() {
 		return EnrichResult{}, errors.New(c.Status().Error)
 	}
 	resp, err := c.rpc.EnrichWord(ctx, &tutorpb.EnrichWordRequest{
-		Session: c.session(),
+		Session: c.session(userID),
 		Word:    word,
 		Level:   level,
 	})
@@ -360,12 +479,12 @@ func (c *Client) EnrichWord(ctx context.Context, word, level string) (EnrichResu
 }
 
 // SearchRag queries a specific RAG corpus.
-func (c *Client) SearchRag(ctx context.Context, query string, corpus tutorpb.RagCorpus, limit int32) (*tutorpb.RagSearchResponse, error) {
+func (c *Client) SearchRag(ctx context.Context, userID int64, query string, corpus tutorpb.RagCorpus, limit int32) (*tutorpb.RagSearchResponse, error) {
 	if !c.Ready() {
 		return nil, errors.New(c.Status().Error)
 	}
 	return c.rpc.SearchRag(ctx, &tutorpb.RagSearchRequest{
-		Session: c.session(),
+		Session: c.session(userID),
 		Query:   query,
 		Corpus:  corpus,
 		Limit:   limit,

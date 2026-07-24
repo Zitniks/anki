@@ -46,7 +46,7 @@ func drainOutbox(ctx context.Context, repo Repository, client *ai.Client, logger
 		if event.ResponseTimeMS != nil {
 			responseTimeMs = *event.ResponseTimeMS
 		}
-		err := client.PublishEvent(ctx, event.Word, event.Correct, responseTimeMs, 1, string(event.CardType), "")
+		err := client.PublishEvent(ctx, event.UserID, event.Word, event.Correct, responseTimeMs, 1, string(event.CardType), "")
 		if err != nil {
 			logger.Warn("publish event failed", zap.Int64("event_id", event.ID), zap.Error(err))
 			if markErr := repo.MarkEventFailed(ctx, event.ID); markErr != nil {

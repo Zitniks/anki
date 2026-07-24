@@ -21,6 +21,12 @@ class TutorRuntimeContext(BaseModel):
     chat_id: str
     project_id: str
     user_id: UUID
+    # The specific Anki Lite account id (0 when the caller is a non-Anki/
+    # legacy session — see Session.anki_user_id in tutor.proto). Distinct
+    # from user_id above, which is the shared repetitor service account used
+    # by every Anki caller. Write-tools that call back into LearnWriteService
+    # (Epic 4) need this to write to the right user's vocabulary deck.
+    anki_user_id: int = 0
     history: list[dict] = Field(default_factory=list)
     documents_context: str = "Документы не загружены."
     system_prompt_key: str = "default"

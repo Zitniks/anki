@@ -31,6 +31,25 @@ class ProjectRepository(BaseRepository[Project]):
             )
             return result.scalar_one()
 
+    async def get_by_anki_user_id(self, anki_user_id: int) -> dict | None:
+        """Find the project scoped to a specific Anki Lite account, if any.
+
+        Parameters
+        ----------
+        anki_user_id : int
+            The Anki Lite (Go/ankis-db) user id.
+
+        Returns
+        -------
+        dict or None
+        """
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(Project).where(Project.anki_user_id == anki_user_id)
+            )
+            project = result.scalar_one_or_none()
+            return project.to_dict() if project else None
+
     async def get_all(self, user_id: str) -> list[dict]:
         """Get all projects for a user, ordered by updated_at desc."""
         async with self._session_factory() as session:

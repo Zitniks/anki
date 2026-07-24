@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"anki/internal/auth"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,7 +39,8 @@ func (h *Handler) EnrichWord(c *gin.Context) {
 		req.Level = "B1"
 	}
 
-	result, err := h.repetitor.EnrichWord(c.Request.Context(), req.Word, req.Level)
+	userID := auth.UserIDFromContext(c)
+	result, err := h.repetitor.EnrichWord(c.Request.Context(), userID, req.Word, req.Level)
 	if err != nil {
 		h.serverError(c, err)
 		return

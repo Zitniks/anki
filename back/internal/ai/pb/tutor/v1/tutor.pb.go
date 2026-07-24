@@ -128,12 +128,22 @@ func (x *Credentials) GetPassword() string {
 }
 
 // Resolved session: user + project + chat ids.
+//
+// anki_user_id identifies the specific Anki Lite account this call is on
+// behalf of. Every Anki Lite user shares one repetitor service account
+// (Credentials), so without this field llm-service has no way to tell them
+// apart — it would (and, before this field existed, did) collapse every
+// Anki user's chat history, BKT mastery, and learning events into one
+// shared project. llm-service uses this to look up (or create) a distinct
+// project per Anki user; 0 means "not supplied" (old caller), which falls
+// back to the single shared project for backward compatibility.
 type Session struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Credentials    *Credentials           `protobuf:"bytes,1,opt,name=credentials,proto3" json:"credentials,omitempty"`
 	ProjectId      string                 `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
 	ChatId         string                 `protobuf:"bytes,3,opt,name=chat_id,json=chatId,proto3" json:"chat_id,omitempty"`
 	PracticeChatId string                 `protobuf:"bytes,4,opt,name=practice_chat_id,json=practiceChatId,proto3" json:"practice_chat_id,omitempty"`
+	AnkiUserId     int64                  `protobuf:"varint,5,opt,name=anki_user_id,json=ankiUserId,proto3" json:"anki_user_id,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -194,6 +204,13 @@ func (x *Session) GetPracticeChatId() string {
 		return x.PracticeChatId
 	}
 	return ""
+}
+
+func (x *Session) GetAnkiUserId() int64 {
+	if x != nil {
+		return x.AnkiUserId
+	}
+	return 0
 }
 
 type EnsureSessionRequest struct {
@@ -1400,6 +1417,482 @@ func (x *GetWeakTopicsResponse) GetTopics() []*WeakTopic {
 	return nil
 }
 
+type WordDraft struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Word          string                 `protobuf:"bytes,1,opt,name=word,proto3" json:"word,omitempty"`
+	Translation   string                 `protobuf:"bytes,2,opt,name=translation,proto3" json:"translation,omitempty"`
+	Example       string                 `protobuf:"bytes,3,opt,name=example,proto3" json:"example,omitempty"`
+	Transcription string                 `protobuf:"bytes,4,opt,name=transcription,proto3" json:"transcription,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WordDraft) Reset() {
+	*x = WordDraft{}
+	mi := &file_tutor_v1_tutor_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WordDraft) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WordDraft) ProtoMessage() {}
+
+func (x *WordDraft) ProtoReflect() protoreflect.Message {
+	mi := &file_tutor_v1_tutor_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WordDraft.ProtoReflect.Descriptor instead.
+func (*WordDraft) Descriptor() ([]byte, []int) {
+	return file_tutor_v1_tutor_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *WordDraft) GetWord() string {
+	if x != nil {
+		return x.Word
+	}
+	return ""
+}
+
+func (x *WordDraft) GetTranslation() string {
+	if x != nil {
+		return x.Translation
+	}
+	return ""
+}
+
+func (x *WordDraft) GetExample() string {
+	if x != nil {
+		return x.Example
+	}
+	return ""
+}
+
+func (x *WordDraft) GetTranscription() string {
+	if x != nil {
+		return x.Transcription
+	}
+	return ""
+}
+
+type AddWordsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Words         []*WordDraft           `protobuf:"bytes,2,rep,name=words,proto3" json:"words,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddWordsRequest) Reset() {
+	*x = AddWordsRequest{}
+	mi := &file_tutor_v1_tutor_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddWordsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddWordsRequest) ProtoMessage() {}
+
+func (x *AddWordsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tutor_v1_tutor_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddWordsRequest.ProtoReflect.Descriptor instead.
+func (*AddWordsRequest) Descriptor() ([]byte, []int) {
+	return file_tutor_v1_tutor_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *AddWordsRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *AddWordsRequest) GetWords() []*WordDraft {
+	if x != nil {
+		return x.Words
+	}
+	return nil
+}
+
+type AddWordResult struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Word          string                 `protobuf:"bytes,1,opt,name=word,proto3" json:"word,omitempty"`
+	Added         bool                   `protobuf:"varint,2,opt,name=added,proto3" json:"added,omitempty"`
+	Reason        string                 `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"` // set when added=false, e.g. "already exists", "invalid"
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddWordResult) Reset() {
+	*x = AddWordResult{}
+	mi := &file_tutor_v1_tutor_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddWordResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddWordResult) ProtoMessage() {}
+
+func (x *AddWordResult) ProtoReflect() protoreflect.Message {
+	mi := &file_tutor_v1_tutor_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddWordResult.ProtoReflect.Descriptor instead.
+func (*AddWordResult) Descriptor() ([]byte, []int) {
+	return file_tutor_v1_tutor_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *AddWordResult) GetWord() string {
+	if x != nil {
+		return x.Word
+	}
+	return ""
+}
+
+func (x *AddWordResult) GetAdded() bool {
+	if x != nil {
+		return x.Added
+	}
+	return false
+}
+
+func (x *AddWordResult) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type AddWordsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Results       []*AddWordResult       `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddWordsResponse) Reset() {
+	*x = AddWordsResponse{}
+	mi := &file_tutor_v1_tutor_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddWordsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddWordsResponse) ProtoMessage() {}
+
+func (x *AddWordsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tutor_v1_tutor_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddWordsResponse.ProtoReflect.Descriptor instead.
+func (*AddWordsResponse) Descriptor() ([]byte, []int) {
+	return file_tutor_v1_tutor_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *AddWordsResponse) GetResults() []*AddWordResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+type DeleteWordRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Word          string                 `protobuf:"bytes,2,opt,name=word,proto3" json:"word,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteWordRequest) Reset() {
+	*x = DeleteWordRequest{}
+	mi := &file_tutor_v1_tutor_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteWordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteWordRequest) ProtoMessage() {}
+
+func (x *DeleteWordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tutor_v1_tutor_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteWordRequest.ProtoReflect.Descriptor instead.
+func (*DeleteWordRequest) Descriptor() ([]byte, []int) {
+	return file_tutor_v1_tutor_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *DeleteWordRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *DeleteWordRequest) GetWord() string {
+	if x != nil {
+		return x.Word
+	}
+	return ""
+}
+
+type DeleteWordResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Deleted       bool                   `protobuf:"varint,1,opt,name=deleted,proto3" json:"deleted,omitempty"` // false if no such word existed for this user
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteWordResponse) Reset() {
+	*x = DeleteWordResponse{}
+	mi := &file_tutor_v1_tutor_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteWordResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteWordResponse) ProtoMessage() {}
+
+func (x *DeleteWordResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tutor_v1_tutor_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteWordResponse.ProtoReflect.Descriptor instead.
+func (*DeleteWordResponse) Descriptor() ([]byte, []int) {
+	return file_tutor_v1_tutor_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *DeleteWordResponse) GetDeleted() bool {
+	if x != nil {
+		return x.Deleted
+	}
+	return false
+}
+
+type CheckWordsExistRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Words         []string               `protobuf:"bytes,2,rep,name=words,proto3" json:"words,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckWordsExistRequest) Reset() {
+	*x = CheckWordsExistRequest{}
+	mi := &file_tutor_v1_tutor_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckWordsExistRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckWordsExistRequest) ProtoMessage() {}
+
+func (x *CheckWordsExistRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tutor_v1_tutor_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckWordsExistRequest.ProtoReflect.Descriptor instead.
+func (*CheckWordsExistRequest) Descriptor() ([]byte, []int) {
+	return file_tutor_v1_tutor_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *CheckWordsExistRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *CheckWordsExistRequest) GetWords() []string {
+	if x != nil {
+		return x.Words
+	}
+	return nil
+}
+
+type WordExistCheck struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Word          string                 `protobuf:"bytes,1,opt,name=word,proto3" json:"word,omitempty"`
+	Exists        bool                   `protobuf:"varint,2,opt,name=exists,proto3" json:"exists,omitempty"`
+	Translation   string                 `protobuf:"bytes,3,opt,name=translation,proto3" json:"translation,omitempty"` // populated only when exists=true
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WordExistCheck) Reset() {
+	*x = WordExistCheck{}
+	mi := &file_tutor_v1_tutor_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WordExistCheck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WordExistCheck) ProtoMessage() {}
+
+func (x *WordExistCheck) ProtoReflect() protoreflect.Message {
+	mi := &file_tutor_v1_tutor_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WordExistCheck.ProtoReflect.Descriptor instead.
+func (*WordExistCheck) Descriptor() ([]byte, []int) {
+	return file_tutor_v1_tutor_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *WordExistCheck) GetWord() string {
+	if x != nil {
+		return x.Word
+	}
+	return ""
+}
+
+func (x *WordExistCheck) GetExists() bool {
+	if x != nil {
+		return x.Exists
+	}
+	return false
+}
+
+func (x *WordExistCheck) GetTranslation() string {
+	if x != nil {
+		return x.Translation
+	}
+	return ""
+}
+
+type CheckWordsExistResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Results       []*WordExistCheck      `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckWordsExistResponse) Reset() {
+	*x = CheckWordsExistResponse{}
+	mi := &file_tutor_v1_tutor_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckWordsExistResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckWordsExistResponse) ProtoMessage() {}
+
+func (x *CheckWordsExistResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tutor_v1_tutor_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckWordsExistResponse.ProtoReflect.Descriptor instead.
+func (*CheckWordsExistResponse) Descriptor() ([]byte, []int) {
+	return file_tutor_v1_tutor_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *CheckWordsExistResponse) GetResults() []*WordExistCheck {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
 var File_tutor_v1_tutor_proto protoreflect.FileDescriptor
 
 const file_tutor_v1_tutor_proto_rawDesc = "" +
@@ -1407,13 +1900,15 @@ const file_tutor_v1_tutor_proto_rawDesc = "" +
 	"\x14tutor/v1/tutor.proto\x12\btutor.v1\x1a\x1bgoogle/protobuf/empty.proto\"?\n" +
 	"\vCredentials\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xa4\x01\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xc6\x01\n" +
 	"\aSession\x127\n" +
 	"\vcredentials\x18\x01 \x01(\v2\x15.tutor.v1.CredentialsR\vcredentials\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x02 \x01(\tR\tprojectId\x12\x17\n" +
 	"\achat_id\x18\x03 \x01(\tR\x06chatId\x12(\n" +
-	"\x10practice_chat_id\x18\x04 \x01(\tR\x0epracticeChatId\"\xb1\x01\n" +
+	"\x10practice_chat_id\x18\x04 \x01(\tR\x0epracticeChatId\x12 \n" +
+	"\fanki_user_id\x18\x05 \x01(\x03R\n" +
+	"ankiUserId\"\xb1\x01\n" +
 	"\x14EnsureSessionRequest\x127\n" +
 	"\vcredentials\x18\x01 \x01(\v2\x15.tutor.v1.CredentialsR\vcredentials\x12\x1d\n" +
 	"\n" +
@@ -1502,7 +1997,35 @@ const file_tutor_v1_tutor_proto_rawDesc = "" +
 	"\x06p_know\x18\x02 \x01(\x01R\x05pKnow\x12\x10\n" +
 	"\x03als\x18\x03 \x01(\x01R\x03als\"D\n" +
 	"\x15GetWeakTopicsResponse\x12+\n" +
-	"\x06topics\x18\x01 \x03(\v2\x13.tutor.v1.WeakTopicR\x06topics*t\n" +
+	"\x06topics\x18\x01 \x03(\v2\x13.tutor.v1.WeakTopicR\x06topics\"\x81\x01\n" +
+	"\tWordDraft\x12\x12\n" +
+	"\x04word\x18\x01 \x01(\tR\x04word\x12 \n" +
+	"\vtranslation\x18\x02 \x01(\tR\vtranslation\x12\x18\n" +
+	"\aexample\x18\x03 \x01(\tR\aexample\x12$\n" +
+	"\rtranscription\x18\x04 \x01(\tR\rtranscription\"U\n" +
+	"\x0fAddWordsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12)\n" +
+	"\x05words\x18\x02 \x03(\v2\x13.tutor.v1.WordDraftR\x05words\"Q\n" +
+	"\rAddWordResult\x12\x12\n" +
+	"\x04word\x18\x01 \x01(\tR\x04word\x12\x14\n" +
+	"\x05added\x18\x02 \x01(\bR\x05added\x12\x16\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\"E\n" +
+	"\x10AddWordsResponse\x121\n" +
+	"\aresults\x18\x01 \x03(\v2\x17.tutor.v1.AddWordResultR\aresults\"@\n" +
+	"\x11DeleteWordRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x12\n" +
+	"\x04word\x18\x02 \x01(\tR\x04word\".\n" +
+	"\x12DeleteWordResponse\x12\x18\n" +
+	"\adeleted\x18\x01 \x01(\bR\adeleted\"G\n" +
+	"\x16CheckWordsExistRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x14\n" +
+	"\x05words\x18\x02 \x03(\tR\x05words\"^\n" +
+	"\x0eWordExistCheck\x12\x12\n" +
+	"\x04word\x18\x01 \x01(\tR\x04word\x12\x16\n" +
+	"\x06exists\x18\x02 \x01(\bR\x06exists\x12 \n" +
+	"\vtranslation\x18\x03 \x01(\tR\vtranslation\"M\n" +
+	"\x17CheckWordsExistResponse\x122\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.tutor.v1.WordExistCheckR\aresults*t\n" +
 	"\tRagCorpus\x12\x1a\n" +
 	"\x16RAG_CORPUS_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13RAG_CORPUS_EXERCISE\x10\x01\x12\x16\n" +
@@ -1518,7 +2041,12 @@ const file_tutor_v1_tutor_proto_rawDesc = "" +
 	"EnrichWord\x12\x1b.tutor.v1.EnrichWordRequest\x1a\x1c.tutor.v1.EnrichWordResponse\x12M\n" +
 	"\fPublishEvent\x12\x1d.tutor.v1.PublishEventRequest\x1a\x1e.tutor.v1.PublishEventResponse\x12M\n" +
 	"\fExplainError\x12\x1d.tutor.v1.ExplainErrorRequest\x1a\x1e.tutor.v1.ExplainErrorResponse\x12P\n" +
-	"\rGetWeakTopics\x12\x1e.tutor.v1.GetWeakTopicsRequest\x1a\x1f.tutor.v1.GetWeakTopicsResponseB\x1dZ\x1banki/internal/ai/pb;tutorpbb\x06proto3"
+	"\rGetWeakTopics\x12\x1e.tutor.v1.GetWeakTopicsRequest\x1a\x1f.tutor.v1.GetWeakTopicsResponse2\xf7\x01\n" +
+	"\x11LearnWriteService\x12A\n" +
+	"\bAddWords\x12\x19.tutor.v1.AddWordsRequest\x1a\x1a.tutor.v1.AddWordsResponse\x12G\n" +
+	"\n" +
+	"DeleteWord\x12\x1b.tutor.v1.DeleteWordRequest\x1a\x1c.tutor.v1.DeleteWordResponse\x12V\n" +
+	"\x0fCheckWordsExist\x12 .tutor.v1.CheckWordsExistRequest\x1a!.tutor.v1.CheckWordsExistResponseB\x1dZ\x1banki/internal/ai/pb;tutorpbb\x06proto3"
 
 var (
 	file_tutor_v1_tutor_proto_rawDescOnce sync.Once
@@ -1533,31 +2061,40 @@ func file_tutor_v1_tutor_proto_rawDescGZIP() []byte {
 }
 
 var file_tutor_v1_tutor_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_tutor_v1_tutor_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_tutor_v1_tutor_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_tutor_v1_tutor_proto_goTypes = []any{
-	(RagCorpus)(0),                // 0: tutor.v1.RagCorpus
-	(*Credentials)(nil),           // 1: tutor.v1.Credentials
-	(*Session)(nil),               // 2: tutor.v1.Session
-	(*EnsureSessionRequest)(nil),  // 3: tutor.v1.EnsureSessionRequest
-	(*StatusResponse)(nil),        // 4: tutor.v1.StatusResponse
-	(*ChatRequest)(nil),           // 5: tutor.v1.ChatRequest
-	(*ChatEvent)(nil),             // 6: tutor.v1.ChatEvent
-	(*PracticeRequest)(nil),       // 7: tutor.v1.PracticeRequest
-	(*PracticeQuestion)(nil),      // 8: tutor.v1.PracticeQuestion
-	(*PracticeResponse)(nil),      // 9: tutor.v1.PracticeResponse
-	(*RagSearchRequest)(nil),      // 10: tutor.v1.RagSearchRequest
-	(*RagChunk)(nil),              // 11: tutor.v1.RagChunk
-	(*RagSearchResponse)(nil),     // 12: tutor.v1.RagSearchResponse
-	(*EnrichWordRequest)(nil),     // 13: tutor.v1.EnrichWordRequest
-	(*EnrichWordResponse)(nil),    // 14: tutor.v1.EnrichWordResponse
-	(*PublishEventRequest)(nil),   // 15: tutor.v1.PublishEventRequest
-	(*PublishEventResponse)(nil),  // 16: tutor.v1.PublishEventResponse
-	(*ExplainErrorRequest)(nil),   // 17: tutor.v1.ExplainErrorRequest
-	(*ExplainErrorResponse)(nil),  // 18: tutor.v1.ExplainErrorResponse
-	(*GetWeakTopicsRequest)(nil),  // 19: tutor.v1.GetWeakTopicsRequest
-	(*WeakTopic)(nil),             // 20: tutor.v1.WeakTopic
-	(*GetWeakTopicsResponse)(nil), // 21: tutor.v1.GetWeakTopicsResponse
-	(*emptypb.Empty)(nil),         // 22: google.protobuf.Empty
+	(RagCorpus)(0),                  // 0: tutor.v1.RagCorpus
+	(*Credentials)(nil),             // 1: tutor.v1.Credentials
+	(*Session)(nil),                 // 2: tutor.v1.Session
+	(*EnsureSessionRequest)(nil),    // 3: tutor.v1.EnsureSessionRequest
+	(*StatusResponse)(nil),          // 4: tutor.v1.StatusResponse
+	(*ChatRequest)(nil),             // 5: tutor.v1.ChatRequest
+	(*ChatEvent)(nil),               // 6: tutor.v1.ChatEvent
+	(*PracticeRequest)(nil),         // 7: tutor.v1.PracticeRequest
+	(*PracticeQuestion)(nil),        // 8: tutor.v1.PracticeQuestion
+	(*PracticeResponse)(nil),        // 9: tutor.v1.PracticeResponse
+	(*RagSearchRequest)(nil),        // 10: tutor.v1.RagSearchRequest
+	(*RagChunk)(nil),                // 11: tutor.v1.RagChunk
+	(*RagSearchResponse)(nil),       // 12: tutor.v1.RagSearchResponse
+	(*EnrichWordRequest)(nil),       // 13: tutor.v1.EnrichWordRequest
+	(*EnrichWordResponse)(nil),      // 14: tutor.v1.EnrichWordResponse
+	(*PublishEventRequest)(nil),     // 15: tutor.v1.PublishEventRequest
+	(*PublishEventResponse)(nil),    // 16: tutor.v1.PublishEventResponse
+	(*ExplainErrorRequest)(nil),     // 17: tutor.v1.ExplainErrorRequest
+	(*ExplainErrorResponse)(nil),    // 18: tutor.v1.ExplainErrorResponse
+	(*GetWeakTopicsRequest)(nil),    // 19: tutor.v1.GetWeakTopicsRequest
+	(*WeakTopic)(nil),               // 20: tutor.v1.WeakTopic
+	(*GetWeakTopicsResponse)(nil),   // 21: tutor.v1.GetWeakTopicsResponse
+	(*WordDraft)(nil),               // 22: tutor.v1.WordDraft
+	(*AddWordsRequest)(nil),         // 23: tutor.v1.AddWordsRequest
+	(*AddWordResult)(nil),           // 24: tutor.v1.AddWordResult
+	(*AddWordsResponse)(nil),        // 25: tutor.v1.AddWordsResponse
+	(*DeleteWordRequest)(nil),       // 26: tutor.v1.DeleteWordRequest
+	(*DeleteWordResponse)(nil),      // 27: tutor.v1.DeleteWordResponse
+	(*CheckWordsExistRequest)(nil),  // 28: tutor.v1.CheckWordsExistRequest
+	(*WordExistCheck)(nil),          // 29: tutor.v1.WordExistCheck
+	(*CheckWordsExistResponse)(nil), // 30: tutor.v1.CheckWordsExistResponse
+	(*emptypb.Empty)(nil),           // 31: google.protobuf.Empty
 }
 var file_tutor_v1_tutor_proto_depIdxs = []int32{
 	1,  // 0: tutor.v1.Session.credentials:type_name -> tutor.v1.Credentials
@@ -1573,29 +2110,38 @@ var file_tutor_v1_tutor_proto_depIdxs = []int32{
 	2,  // 10: tutor.v1.ExplainErrorRequest.session:type_name -> tutor.v1.Session
 	2,  // 11: tutor.v1.GetWeakTopicsRequest.session:type_name -> tutor.v1.Session
 	20, // 12: tutor.v1.GetWeakTopicsResponse.topics:type_name -> tutor.v1.WeakTopic
-	22, // 13: tutor.v1.TutorService.Health:input_type -> google.protobuf.Empty
-	3,  // 14: tutor.v1.TutorService.EnsureSession:input_type -> tutor.v1.EnsureSessionRequest
-	5,  // 15: tutor.v1.TutorService.Chat:input_type -> tutor.v1.ChatRequest
-	7,  // 16: tutor.v1.TutorService.GeneratePractice:input_type -> tutor.v1.PracticeRequest
-	10, // 17: tutor.v1.TutorService.SearchRag:input_type -> tutor.v1.RagSearchRequest
-	13, // 18: tutor.v1.TutorService.EnrichWord:input_type -> tutor.v1.EnrichWordRequest
-	15, // 19: tutor.v1.TutorService.PublishEvent:input_type -> tutor.v1.PublishEventRequest
-	17, // 20: tutor.v1.TutorService.ExplainError:input_type -> tutor.v1.ExplainErrorRequest
-	19, // 21: tutor.v1.TutorService.GetWeakTopics:input_type -> tutor.v1.GetWeakTopicsRequest
-	4,  // 22: tutor.v1.TutorService.Health:output_type -> tutor.v1.StatusResponse
-	4,  // 23: tutor.v1.TutorService.EnsureSession:output_type -> tutor.v1.StatusResponse
-	6,  // 24: tutor.v1.TutorService.Chat:output_type -> tutor.v1.ChatEvent
-	9,  // 25: tutor.v1.TutorService.GeneratePractice:output_type -> tutor.v1.PracticeResponse
-	12, // 26: tutor.v1.TutorService.SearchRag:output_type -> tutor.v1.RagSearchResponse
-	14, // 27: tutor.v1.TutorService.EnrichWord:output_type -> tutor.v1.EnrichWordResponse
-	16, // 28: tutor.v1.TutorService.PublishEvent:output_type -> tutor.v1.PublishEventResponse
-	18, // 29: tutor.v1.TutorService.ExplainError:output_type -> tutor.v1.ExplainErrorResponse
-	21, // 30: tutor.v1.TutorService.GetWeakTopics:output_type -> tutor.v1.GetWeakTopicsResponse
-	22, // [22:31] is the sub-list for method output_type
-	13, // [13:22] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	22, // 13: tutor.v1.AddWordsRequest.words:type_name -> tutor.v1.WordDraft
+	24, // 14: tutor.v1.AddWordsResponse.results:type_name -> tutor.v1.AddWordResult
+	29, // 15: tutor.v1.CheckWordsExistResponse.results:type_name -> tutor.v1.WordExistCheck
+	31, // 16: tutor.v1.TutorService.Health:input_type -> google.protobuf.Empty
+	3,  // 17: tutor.v1.TutorService.EnsureSession:input_type -> tutor.v1.EnsureSessionRequest
+	5,  // 18: tutor.v1.TutorService.Chat:input_type -> tutor.v1.ChatRequest
+	7,  // 19: tutor.v1.TutorService.GeneratePractice:input_type -> tutor.v1.PracticeRequest
+	10, // 20: tutor.v1.TutorService.SearchRag:input_type -> tutor.v1.RagSearchRequest
+	13, // 21: tutor.v1.TutorService.EnrichWord:input_type -> tutor.v1.EnrichWordRequest
+	15, // 22: tutor.v1.TutorService.PublishEvent:input_type -> tutor.v1.PublishEventRequest
+	17, // 23: tutor.v1.TutorService.ExplainError:input_type -> tutor.v1.ExplainErrorRequest
+	19, // 24: tutor.v1.TutorService.GetWeakTopics:input_type -> tutor.v1.GetWeakTopicsRequest
+	23, // 25: tutor.v1.LearnWriteService.AddWords:input_type -> tutor.v1.AddWordsRequest
+	26, // 26: tutor.v1.LearnWriteService.DeleteWord:input_type -> tutor.v1.DeleteWordRequest
+	28, // 27: tutor.v1.LearnWriteService.CheckWordsExist:input_type -> tutor.v1.CheckWordsExistRequest
+	4,  // 28: tutor.v1.TutorService.Health:output_type -> tutor.v1.StatusResponse
+	4,  // 29: tutor.v1.TutorService.EnsureSession:output_type -> tutor.v1.StatusResponse
+	6,  // 30: tutor.v1.TutorService.Chat:output_type -> tutor.v1.ChatEvent
+	9,  // 31: tutor.v1.TutorService.GeneratePractice:output_type -> tutor.v1.PracticeResponse
+	12, // 32: tutor.v1.TutorService.SearchRag:output_type -> tutor.v1.RagSearchResponse
+	14, // 33: tutor.v1.TutorService.EnrichWord:output_type -> tutor.v1.EnrichWordResponse
+	16, // 34: tutor.v1.TutorService.PublishEvent:output_type -> tutor.v1.PublishEventResponse
+	18, // 35: tutor.v1.TutorService.ExplainError:output_type -> tutor.v1.ExplainErrorResponse
+	21, // 36: tutor.v1.TutorService.GetWeakTopics:output_type -> tutor.v1.GetWeakTopicsResponse
+	25, // 37: tutor.v1.LearnWriteService.AddWords:output_type -> tutor.v1.AddWordsResponse
+	27, // 38: tutor.v1.LearnWriteService.DeleteWord:output_type -> tutor.v1.DeleteWordResponse
+	30, // 39: tutor.v1.LearnWriteService.CheckWordsExist:output_type -> tutor.v1.CheckWordsExistResponse
+	28, // [28:40] is the sub-list for method output_type
+	16, // [16:28] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_tutor_v1_tutor_proto_init() }
@@ -1609,9 +2155,9 @@ func file_tutor_v1_tutor_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tutor_v1_tutor_proto_rawDesc), len(file_tutor_v1_tutor_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   21,
+			NumMessages:   30,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_tutor_v1_tutor_proto_goTypes,
 		DependencyIndexes: file_tutor_v1_tutor_proto_depIdxs,

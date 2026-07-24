@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -11,8 +12,10 @@ import (
 	"time"
 
 	"anki/internal/ai"
+	tutorpb "anki/internal/ai/pb/tutor/v1"
 	"anki/internal/api"
 	"anki/internal/auth"
+	"anki/internal/learnwrite"
 	"anki/internal/model"
 	"anki/internal/service"
 	"anki/internal/storage"
@@ -20,6 +23,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -72,6 +76,7 @@ func main() {
 	cookieSecure := getEnv("COOKIE_SECURE", "true") != "false"
 	handler := api.NewHandler(wordService, repetitorClient, logger, jwtSecret, cookieSecure)
 	go service.RunEventPublisher(ctx, repo, repetitorClient, logger)
+	go runLearnWriteServer(wordService, logger)
 
 	router := gin.New()
 	router.Use(gin.Recovery())
@@ -134,12 +139,36 @@ func registerAPIRoutes(group *gin.RouterGroup, handler *api.Handler, jwtSecret s
 	protected.GET("/review/advanced/next", handler.NextAdvancedReviewWord)
 	protected.POST("/review/advanced", handler.SubmitAdvancedReview)
 	protected.POST("/practice/generate", handler.PracticeGenerate)
+	protected.POST("/theory/quiz", handler.TheoryQuiz)
+	protected.POST("/theory/check-exercise", handler.CheckExercise)
+	protected.POST("/theory/topic-progress", handler.MarkTopicCompleted)
+	protected.GET("/theory/topic-progress", handler.GetTopicProgress)
+	protected.POST("/theory/drill/generate", handler.TheoryDrillGenerate)
 	protected.GET("/ai/status", handler.AIStatus)
 	protected.POST("/ai/chat/stream", handler.AIChatStream)
 	protected.POST("/ai/explain-error", handler.ExplainError)
 	protected.GET("/ai/weak-topics", handler.WeakTopics)
 	protected.GET("/stats/activity", handler.ActivityDays)
 	protected.GET("/stats", handler.Stats)
+}
+
+// runLearnWriteServer serves the reverse channel (Epic 2): llm-service dials
+// in as a gRPC client to read/write the current Anki user's own vocabulary
+// deck mid-conversation. Separate port from the main HTTP server and from
+// nothing — ankis has no other gRPC server today.
+func runLearnWriteServer(wordService *service.WordService, logger *zap.Logger) {
+	addr := getEnv("LEARN_WRITE_GRPC_ADDR", ":50052")
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		logger.Error("learn write grpc listen failed", zap.String("addr", addr), zap.Error(err))
+		return
+	}
+	grpcServer := grpc.NewServer()
+	tutorpb.RegisterLearnWriteServiceServer(grpcServer, learnwrite.NewServer(wordService, logger))
+	logger.Info("learn write grpc server started", zap.String("addr", addr))
+	if err := grpcServer.Serve(lis); err != nil {
+		logger.Error("learn write grpc serve failed", zap.Error(err))
+	}
 }
 
 func getEnv(key, fallback string) string {
