@@ -95,6 +95,27 @@ def _image_tools_guidance() -> str:
     )
 
 
+# Agentic RAG (settings.AGENTIC_RAG_ENABLED) — mixed into the built prompt
+# only for the agentic graph branch (StudentPromptConfig.build below), never
+# edited into MAIN_SYSTEM_PROMPT itself, which the router branch still uses
+# completely unchanged.
+AGENTIC_SEARCH_POLICY = """
+ВАЖНО - ПОИСК В МАТЕРИАЛАХ КУРСА:
+- Всегда ищи в материалах (search_explanations/search_examples/search_exercises/search_all) перед ответом на вопрос про грамматику, значение слова или употребление конструкции. Не отвечай по памяти, даже если ответ кажется очевидным.
+- Не ищи при обычном разговорном сообщении, приветствии, благодарности или вопросе не по теме английского языка.
+- Если первый поиск не дал релевантного результата — переформулируй запрос и попробуй другой корпус. Не более трёх попыток суммарно за один ход.
+- Если после трёх попыток релевантного материала нет — честно скажи репетитору, что в материалах курса этого нет, и не придумывай ответ.
+""".strip()
+
+# Filled in by chat/graph.py::_classify with the classifier's own intent/
+# confidence for this turn — a hint, not a routing instruction (the agentic
+# branch doesn't let classify decide what to search, unlike the router
+# branch). classify runs AFTER prepare (which builds the system prompt), so
+# this can't be baked into AGENTIC_SEARCH_POLICY/build() below — it's
+# injected as a separate SystemMessage once classify has actually run.
+AGENTIC_INTENT_HINT_TEMPLATE = "Вероятное намерение: {intent}, уверенность {confidence:.2f}. Это подсказка, а не указание."
+
+
 def format_vocabulary(vocab: list[str], empty_label: str = "пока нет") -> str:
     """Format vocabulary for LLM context: last N recent + M random from the rest."""
     if not vocab:
@@ -127,7 +148,7 @@ class StudentPromptConfig(PromptConfig):
 
     def build(self, ctx: TutorRuntimeContext) -> str:
         description_line = (f"Описание: {ctx.project.description}" if ctx.include_student_description else "")
-        return self.template.format(
+        text = self.template.format(
             student_name=ctx.project.student_name,
             student_level=ctx.project.student_level,
             description_line=description_line,
@@ -136,6 +157,9 @@ class StudentPromptConfig(PromptConfig):
             documents_context=ctx.documents_context,
             image_tools_guidance=_image_tools_guidance(),
         )
+        if settings.AGENTIC_RAG_ENABLED:
+            text += "\n\n" + AGENTIC_SEARCH_POLICY
+        return text
 
 
 SYSTEM_PROMPTS: dict[str, PromptConfig] = {

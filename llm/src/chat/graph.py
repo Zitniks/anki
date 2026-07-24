@@ -26,7 +26,7 @@ from analytics.retrievers import (
 )
 from chat.intent import classify_intent
 from chat.persistence import convert_to_langchain_messages
-from chat.prompts import SYSTEM_PROMPTS
+from chat.prompts import AGENTIC_INTENT_HINT_TEMPLATE, SYSTEM_PROMPTS
 from chat.rag_router import REFUSAL_MESSAGE, resolve_route
 from chat.search_tools import SEARCH_TOOLS
 from chat.state import TutorRuntimeContext, TutorState
@@ -121,11 +121,20 @@ async def _classify(state: TutorState, runtime: Runtime[TutorRuntimeContext]) ->
         f"route_mode={route.mode} retrievers={route.retrievers} reason={route.reason!r}")
     # `intent`/`confidence` are extra keys on top of RouteDecision's own fields
     # (mode/retrievers/topic/reason/message) — additive, so the router branch
-    # (which only ever reads mode/retrievers/topic) is unaffected. The agentic
-    # branch's prompt hint (Этап 3, AGENTIC_SEARCH_POLICY) needs these to tell
-    # the model "Вероятное намерение: X, уверенность Y" without re-running the
-    # classifier a second time.
-    return {"route_decision": {**asdict(route), "intent": intent.intent, "confidence": intent.confidence}}
+    # (which only ever reads mode/retrievers/topic) is unaffected.
+    result: dict = {"route_decision": {**asdict(route), "intent": intent.intent, "confidence": intent.confidence}}
+
+    # Agentic branch only: `_prepare_messages` (which builds the system
+    # prompt) already ran before this node, so AGENTIC_SEARCH_POLICY was
+    # mixed in without per-turn data — the classifier's own hint has to be
+    # injected as a separate SystemMessage here, once classify has actually
+    # run. Guarded by the flag so the router branch never gets this extra
+    # message (its behavior must stay unchanged with the flag off).
+    if settings.AGENTIC_RAG_ENABLED:
+        hint = AGENTIC_INTENT_HINT_TEMPLATE.format(intent=intent.intent, confidence=intent.confidence)
+        result["messages"] = [SystemMessage(content=hint)]
+
+    return result
 
 
 async def _refuse(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
