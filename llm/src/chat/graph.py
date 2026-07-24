@@ -5,11 +5,12 @@ only owns graph construction.
 """
 
 import asyncio
+import time
 from dataclasses import asdict
 from typing import Literal
 
 from langchain_core.documents import Document
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.config import get_stream_writer
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.state import CompiledStateGraph
@@ -28,7 +29,7 @@ from chat.intent import classify_intent
 from chat.persistence import convert_to_langchain_messages
 from chat.prompts import AGENTIC_INTENT_HINT_TEMPLATE, SYSTEM_PROMPTS
 from chat.rag_router import REFUSAL_MESSAGE, resolve_route
-from chat.search_tools import SEARCH_TOOLS
+from chat.search_tools import SEARCH_TOOLS, _SEARCH_TOOL_CORPUS, _SEARCH_TOOL_NAMES, run_search_all
 from chat.state import TutorRuntimeContext, TutorState
 from chat.tools import TOOLS
 from database import async_session_factory
@@ -52,6 +53,10 @@ _tool_node = ToolNode(TOOLS, handle_tool_errors=_TOOL_ERROR_MESSAGE)
 # silently failing to find the other's tool.
 _llm_with_agentic_tools = settings.llm.bind_tools(TOOLS + SEARCH_TOOLS)
 _agentic_tool_node = ToolNode(TOOLS + SEARCH_TOOLS, handle_tool_errors=_TOOL_ERROR_MESSAGE)
+# Tool-free — used only by `_finalize`'s forced-retry model call, which must
+# not be able to request another tool (that branch is a dead end: finalize
+# only has an edge to END, no way back into agent/search_tools).
+_llm_plain = settings.llm
 
 _RETRIEVER_CLASSES: dict[str, type[TutorRetriever]] = {
     "exercise": ExerciseRetriever,
@@ -133,6 +138,10 @@ async def _classify(state: TutorState, runtime: Runtime[TutorRuntimeContext]) ->
     if settings.AGENTIC_RAG_ENABLED:
         hint = AGENTIC_INTENT_HINT_TEMPLATE.format(intent=intent.intent, confidence=intent.confidence)
         result["messages"] = [SystemMessage(content=hint)]
+        # Этап 4 timeout budget: stamped once here (classify runs exactly once
+        # per turn, before the agent<->search_tools loop), checked by
+        # `_agentic_should_continue` on every iteration of that loop.
+        result["agentic_deadline"] = time.monotonic() + settings.AGENTIC_RAG_TIMEOUT_SECONDS
 
     return result
 
@@ -223,7 +232,15 @@ async def _call_agentic_model(state: TutorState, runtime: Runtime[TutorRuntimeCo
 
 def _agentic_should_continue(state: TutorState) -> Literal["search_tools", "finalize"]:
     last = state["messages"][-1]
-    return "search_tools" if getattr(last, "tool_calls", None) else "finalize"
+    if not getattr(last, "tool_calls", None):
+        return "finalize"
+    deadline = state.get("agentic_deadline")
+    if deadline is not None and time.monotonic() >= deadline:
+        # Budget's up — `finalize` still owes a ToolMessage for every pending
+        # tool_call on `last` (LangChain requires one per call_id), so it
+        # can't just be dropped here; `_finalize` stubs them out.
+        return "finalize"
+    return "search_tools"
 
 
 def _classify_or_refuse_agentic(state: TutorState) -> Literal["agent", "refuse"]:
@@ -233,10 +250,147 @@ def _classify_or_refuse_agentic(state: TutorState) -> Literal["agent", "refuse"]
     return "agent"
 
 
+def _tool_call_key(name: str, args: dict) -> tuple:
+    return (name, tuple(sorted(args.items())))
+
+
+async def _search_tools_node(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
+    """Executes pending tool calls for the agentic branch's ``agent`` node.
+
+    Wraps the plain ``ToolNode(TOOLS + SEARCH_TOOLS)`` (still used for actual
+    execution, so ``ToolRuntime`` injection stays correct) with three things
+    the spec asks for that a stock ``ToolNode`` can't do on its own:
+    per-turn search-call counting/limiting, anti-loop deduplication, and
+    ``corpora_used``/``retrieved_docs`` tracking for Этап 5's metrics. Every
+    tool_call still gets exactly one ToolMessage (some real, some synthetic
+    stubs for skipped/duplicate calls) — never left dangling.
+    """
+    last = state["messages"][-1]
+    calls = getattr(last, "tool_calls", None) or []
+
+    search_calls_so_far = state.get("search_calls", 0)
+    retrieved_docs = list(state.get("retrieved_docs", []))
+    corpora_used = set(state.get("corpora_used", set()))
+    last_search_key = _tool_call_key(retrieved_docs[-1]["name"], retrieved_docs[-1]["args"]) if retrieved_docs else None
+
+    to_execute: list[dict] = []
+    stub_messages: list[ToolMessage] = []
+    new_search_calls = 0
+
+    for call in calls:
+        name = call["name"]
+        args = call.get("args", {})
+        if name not in _SEARCH_TOOL_NAMES:
+            to_execute.append(call)
+            continue
+
+        key = _tool_call_key(name, args)
+        if key == last_search_key:
+            cached = retrieved_docs[-1]["result"]
+            llm_logger.info(f"search_tool.dedup name={name} args={args} — identical to previous call, skipped")
+            stub_messages.append(ToolMessage(
+                content=f"[повторный запрос — использован результат предыдущего вызова]\n{cached}",
+                tool_call_id=call["id"], name=name))
+            continue
+
+        if search_calls_so_far + new_search_calls >= settings.AGENTIC_RAG_SEARCH_CALL_LIMIT:
+            llm_logger.info(f"search_tool.limit_reached name={name} args={args} "
+                            f"limit={settings.AGENTIC_RAG_SEARCH_CALL_LIMIT}")
+            stub_messages.append(ToolMessage(
+                content=f"Лимит поисковых запросов ({settings.AGENTIC_RAG_SEARCH_CALL_LIMIT}) на этот ход исчерпан.",
+                tool_call_id=call["id"], name=name))
+            continue
+
+        to_execute.append(call)
+        new_search_calls += 1
+        last_search_key = key  # a 2nd distinct search call in the same batch still dedups against this one
+
+    result_messages: list = list(stub_messages)
+    if to_execute:
+        stub_ai_message = AIMessage(content="", tool_calls=to_execute)
+        tool_result = await _agentic_tool_node.ainvoke({"messages": [stub_ai_message]})
+        executed_msgs = tool_result["messages"]
+        result_messages.extend(executed_msgs)
+
+        by_id = {call["id"]: call for call in to_execute}
+        for msg in executed_msgs:
+            call = by_id.get(msg.tool_call_id)
+            if call is None or call["name"] not in _SEARCH_TOOL_NAMES:
+                continue
+            retrieved_docs.append({"name": call["name"], "args": call.get("args", {}), "result": msg.content})
+            corpora_used.add(_SEARCH_TOOL_CORPUS.get(call["name"], call["name"]))
+
+    return {
+        "messages": result_messages,
+        "search_calls": search_calls_so_far + new_search_calls,
+        "retrieved_docs": retrieved_docs,
+        "corpora_used": corpora_used,
+    }
+
+
+_EDUCATIONAL_INTENTS = {"exercise", "explanation", "example"}
+_SKIP_SEARCH_CONFIDENCE_THRESHOLD = 0.6
+
+
 async def _finalize(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
-    """Terminal node of the agentic branch. Passthrough for now — the
-    skip-search / forced-retry safety net is added in Этап 4."""
-    return {}
+    """Terminal node of the agentic branch.
+
+    Two responsibilities, both Этап 4 safety nets:
+    1. If reached via the iteration-limit/timeout bypass in
+       `_agentic_should_continue` (skipping `search_tools` entirely), the
+       last AIMessage may still have unresolved tool_calls — stub them so
+       every call_id gets exactly one ToolMessage.
+    2. Skip-search safety net: an educational-intent turn that made it all
+       the way here without ever searching gets exactly one forced
+       `search_all` pass + one more (tool-free) model call. Guarded by
+       `forced_search_done` so this can only ever fire once per turn.
+    """
+    messages = state["messages"]
+    last = messages[-1] if messages else None
+    ctx = runtime.context
+
+    stub_messages: list[ToolMessage] = []
+    if last is not None and getattr(last, "tool_calls", None):
+        for call in last.tool_calls:
+            stub_messages.append(ToolMessage(
+                content="Инструмент не был вызван — превышен лимит поисков или таймаут на этот ход.",
+                tool_call_id=call["id"], name=call.get("name", "")))
+
+    route_data = state.get("route_decision") or {}
+    intent = route_data.get("intent")
+    confidence = route_data.get("confidence", 0.0)
+    search_calls = state.get("search_calls", 0)
+
+    should_force_search = (
+        not stub_messages
+        and not state.get("forced_search_done", False)
+        and search_calls == 0
+        and intent in _EDUCATIONAL_INTENTS
+        and confidence > _SKIP_SEARCH_CONFIDENCE_THRESHOLD
+    )
+    if not should_force_search:
+        return {"messages": stub_messages} if stub_messages else {}
+
+    query = _extract_text(ctx.current_user_message) if ctx.current_user_message else ""
+    if not query:
+        return {"messages": stub_messages} if stub_messages else {}
+
+    llm_logger.info(f"chat.agentic_forced_search project_id={ctx.project_id} intent={intent} "
+                    f"confidence={confidence:.2f} reason='search_calls=0 on educational intent'")
+    forced_result = await run_search_all(str(ctx.user_id), query)
+    forced_context = SystemMessage(
+        content=f"=== Результат обязательного поиска (студент не получил ответ без него) ===\n{forced_result}")
+
+    # Tool-free model call: guarantees no new tool_calls can appear, so this
+    # branch can safely be a dead end (finalize -> END, no way back into
+    # agent/search_tools — "второй раз в эту ветку заходить нельзя").
+    final_messages = [*messages, forced_context]
+    response = await _llm_plain.ainvoke(final_messages)
+
+    return {
+        "messages": [forced_context, response],
+        "forced_search_done": True,
+    }
 
 
 def build_tutor_graph() -> CompiledStateGraph:
@@ -255,7 +409,7 @@ def build_tutor_graph() -> CompiledStateGraph:
 
     if settings.AGENTIC_RAG_ENABLED:
         builder.add_node("agent", _call_agentic_model)
-        builder.add_node("search_tools", _agentic_tool_node)
+        builder.add_node("search_tools", _search_tools_node)
         builder.add_node("refuse", _refuse)
         builder.add_node("finalize", _finalize)
         builder.add_conditional_edges("classify", _classify_or_refuse_agentic)

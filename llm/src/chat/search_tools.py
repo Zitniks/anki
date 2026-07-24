@@ -168,17 +168,11 @@ class SearchAllInput(BaseModel):
     limit: int = Field(default=5, ge=1, le=10)
 
 
-@tool("search_all", args_schema=SearchAllInput)
-async def search_all_tool(
-    query: str,
-    runtime: ToolRuntime[TutorRuntimeContext],
-    limit: int = 5,
-) -> str:
-    """Искать сразу во всех корпусах. Используй, когда непонятно,
-    к какой категории относится вопрос."""
-    ctx = runtime.context
+async def run_search_all(user_id: str, query: str, limit: int = 5) -> str:
+    """Core of ``search_all`` — also called directly by ``chat/graph.py``'s
+    ``_finalize`` (skip-search safety net, Этап 4), which has no
+    ``ToolRuntime`` to hand to the ``@tool``-wrapped version."""
     clean = _clean_query(query)
-    user_id = str(ctx.user_id)
     retrievers: list[TutorRetriever] = [
         ExerciseRetriever(session_factory=async_session_factory, user_id=user_id, limit=limit),
         ExplanationRetriever(session_factory=async_session_factory, user_id=user_id, limit=limit),
@@ -195,4 +189,22 @@ async def search_all_tool(
     return _format_hits(docs, "результатов", show_source=True)
 
 
+@tool("search_all", args_schema=SearchAllInput)
+async def search_all_tool(
+    query: str,
+    runtime: ToolRuntime[TutorRuntimeContext],
+    limit: int = 5,
+) -> str:
+    """Искать сразу во всех корпусах. Используй, когда непонятно,
+    к какой категории относится вопрос."""
+    return await run_search_all(str(runtime.context.user_id), query, limit)
+
+
 SEARCH_TOOLS = [search_explanations_tool, search_examples_tool, search_exercises_tool, search_all_tool]
+_SEARCH_TOOL_NAMES = {t.name for t in SEARCH_TOOLS}
+_SEARCH_TOOL_CORPUS = {
+    "search_explanations": "explanation",
+    "search_examples": "example",
+    "search_exercises": "exercise",
+    "search_all": "all",
+}

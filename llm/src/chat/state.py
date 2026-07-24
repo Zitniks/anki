@@ -115,3 +115,8 @@ class TutorState(MessagesState):
     search_calls: int
     retrieved_docs: list[dict]
     corpora_used: set[str]
+    # Этап 4 safety nets: wall-clock deadline (time.monotonic() cutoff, stamped
+    # once by `_classify`) and a one-shot guard so the skip-search forced-retry
+    # in `_finalize` can never fire twice for the same turn.
+    agentic_deadline: float | None
+    forced_search_done: bool
