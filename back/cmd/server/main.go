@@ -69,7 +69,8 @@ func main() {
 	}
 	wordService := service.NewWordService(repo, logger)
 	repetitorClient, _ := ai.NewClient(logger)
-	handler := api.NewHandler(wordService, repetitorClient, logger, jwtSecret)
+	cookieSecure := getEnv("COOKIE_SECURE", "true") != "false"
+	handler := api.NewHandler(wordService, repetitorClient, logger, jwtSecret, cookieSecure)
 	go service.RunEventPublisher(ctx, repo, repetitorClient, logger)
 
 	router := gin.New()
@@ -108,6 +109,7 @@ func main() {
 func registerAPIRoutes(group *gin.RouterGroup, handler *api.Handler, jwtSecret string) {
 	group.POST("/auth/register", handler.Register)
 	group.POST("/auth/login", handler.Login)
+	group.POST("/auth/guest", handler.GuestLogin)
 
 	protected := group.Group("")
 	protected.Use(auth.RequireAuth(jwtSecret))

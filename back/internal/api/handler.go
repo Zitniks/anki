@@ -20,14 +20,15 @@ import (
 )
 
 type Handler struct {
-	service   *service.WordService
-	repetitor *ai.Client
-	logger    *zap.Logger
-	jwtSecret string
+	service      *service.WordService
+	repetitor    *ai.Client
+	logger       *zap.Logger
+	jwtSecret    string
+	cookieSecure bool
 }
 
-func NewHandler(s *service.WordService, repetitor *ai.Client, logger *zap.Logger, jwtSecret string) *Handler {
-	return &Handler{service: s, repetitor: repetitor, logger: logger, jwtSecret: jwtSecret}
+func NewHandler(s *service.WordService, repetitor *ai.Client, logger *zap.Logger, jwtSecret string, cookieSecure bool) *Handler {
+	return &Handler{service: s, repetitor: repetitor, logger: logger, jwtSecret: jwtSecret, cookieSecure: cookieSecure}
 }
 
 type addWordRequest struct {

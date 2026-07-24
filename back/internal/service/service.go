@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -40,6 +43,7 @@ type Repository interface {
 	MarkEventPublished(ctx context.Context, id int64) error
 	MarkEventFailed(ctx context.Context, id int64) error
 	CreateUser(ctx context.Context, email, passwordHash string, now time.Time) (model.User, error)
+	CreateGuestUser(ctx context.Context, email, passwordHash string, now time.Time) (model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	GetUserByID(ctx context.Context, id int64) (*model.User, error)
 	SetUserLevel(ctx context.Context, userID int64, level string) error
@@ -98,6 +102,42 @@ func (s *WordService) seedStarterWords(ctx context.Context, userID int64) {
 			s.logger.Warn("seed starter word failed", zap.Int64("user_id", userID), zap.String("word", w.Word), zap.Error(err))
 		}
 	}
+}
+
+// CreateGuestUser provisions a fresh guest account: a random unique placeholder
+// email/password satisfying the users table's NOT NULL constraints (never used
+// for password login — guests authenticate purely via the JWT the caller mints
+// afterward), seeded with the same starter deck as a registered signup.
+func (s *WordService) CreateGuestUser(ctx context.Context) (model.User, error) {
+	suffix, err := randomHex(16)
+	if err != nil {
+		return model.User{}, err
+	}
+	email := fmt.Sprintf("guest-%s@guest.local", suffix)
+
+	passwordSuffix, err := randomHex(16)
+	if err != nil {
+		return model.User{}, err
+	}
+	hash, err := auth.HashPassword(passwordSuffix)
+	if err != nil {
+		return model.User{}, err
+	}
+
+	created, err := s.repo.CreateGuestUser(ctx, email, hash, time.Now().UTC())
+	if err != nil {
+		return model.User{}, err
+	}
+	s.seedStarterWords(ctx, created.ID)
+	return created, nil
+}
+
+func randomHex(n int) (string, error) {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 func (s *WordService) Authenticate(ctx context.Context, email, password string) (model.User, error) {

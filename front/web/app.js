@@ -1708,11 +1708,26 @@ $("placement-skip").addEventListener("click", async () => {
 
 async function bootstrap() {
   await detectAPIBase();
-  if (!getAuthToken()) {
+  if (!getAuthToken() && !(await tryGuestLogin())) {
     showLoginScreen();
     return;
   }
   await enterAfterAuth();
+}
+
+// Frictionless entry: silently provisions (or re-recognizes, via the persistent
+// guest cookie) a guest account instead of showing the login screen. Returns
+// false on any failure so bootstrap() falls back to the normal login screen.
+async function tryGuestLogin() {
+  try {
+    const res = await apiFetch(`/auth/guest`, { method: "POST" });
+    if (!res.ok) return false;
+    const data = await res.json();
+    setAuthToken(data.token);
+    return true;
+  } catch (_err) {
+    return false;
+  }
 }
 
 // Decides between the placement quiz (first login, no level yet) and the main

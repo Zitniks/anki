@@ -126,5 +126,6 @@ type User struct {
 	PasswordHash string    `json:"-"`
 	Name         *string   `json:"name,omitempty"`
 	CEFRLevel    *string   `json:"cefr_level,omitempty"`
+	IsGuest      bool      `json:"is_guest"`
 	CreatedAt    time.Time `json:"created_at"`
 }

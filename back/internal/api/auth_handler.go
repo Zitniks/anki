@@ -5,10 +5,16 @@ import (
 	"net/http"
 
 	"anki/internal/auth"
+	"anki/internal/model"
 	"anki/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
+
+// guestCookieName holds the long-lived guest-recognition token — separate from the
+// Authorization-header session token — so a returning guest can be re-identified
+// even after localStorage is cleared or evicted (e.g. Safari ITP).
+const guestCookieName = "anki_guest_device"
 
 type registerRequest struct {
 	Email    string `json:"email"`
@@ -66,7 +72,50 @@ func (h *Handler) Login(c *gin.Context) {
 
 func (h *Handler) Logout(c *gin.Context) {
 	// Stateless JWT — nothing to invalidate server-side; the client discards its token.
+	// Also clear the guest-recognition cookie: without this, a guest who explicitly
+	// logs out would be silently signed back in as the same guest on next visit.
+	c.SetCookie(guestCookieName, "", -1, "/", "", h.cookieSecure, true)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// GuestLogin provisions frictionless access without registration. If the caller
+// already carries a valid guest-recognition cookie, it re-identifies that same
+// guest instead of creating a new one — so closing the tab and coming back keeps
+// the guest's vocabulary and progress. Otherwise a brand-new guest account is
+// created. Either way a fresh, short-lived API session token is minted and the
+// long-lived recognition cookie is (re-)set with a sliding expiration.
+func (h *Handler) GuestLogin(c *gin.Context) {
+	if deviceToken, err := c.Cookie(guestCookieName); err == nil && deviceToken != "" {
+		if claims, err := auth.ValidateToken(h.jwtSecret, deviceToken); err == nil {
+			if user, err := h.service.GetUserByID(c.Request.Context(), claims.UserID); err == nil && user.IsGuest {
+				h.issueGuestSession(c, user)
+				return
+			}
+		}
+	}
+
+	user, err := h.service.CreateGuestUser(c.Request.Context())
+	if err != nil {
+		h.serverError(c, err)
+		return
+	}
+	h.issueGuestSession(c, user)
+}
+
+func (h *Handler) issueGuestSession(c *gin.Context, user model.User) {
+	sessionToken, err := auth.GenerateToken(h.jwtSecret, user.ID, user.Email)
+	if err != nil {
+		h.serverError(c, err)
+		return
+	}
+	deviceToken, err := auth.GenerateGuestDeviceToken(h.jwtSecret, user.ID, user.Email)
+	if err != nil {
+		h.serverError(c, err)
+		return
+	}
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(guestCookieName, deviceToken, int(auth.GuestDeviceTokenTTL.Seconds()), "/", "", h.cookieSecure, true)
+	c.JSON(http.StatusOK, gin.H{"token": sessionToken, "id": user.ID, "email": user.Email, "is_guest": true})
 }
 
 func (h *Handler) Me(c *gin.Context) {
@@ -76,7 +125,9 @@ func (h *Handler) Me(c *gin.Context) {
 		h.serverError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"id": user.ID, "email": user.Email, "name": user.Name, "cefr_level": user.CEFRLevel})
+	c.JSON(http.StatusOK, gin.H{
+		"id": user.ID, "email": user.Email, "name": user.Name, "cefr_level": user.CEFRLevel, "is_guest": user.IsGuest,
+	})
 }
 
 type updateProfileRequest struct {

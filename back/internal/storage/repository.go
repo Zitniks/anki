@@ -623,6 +623,16 @@ func (r *Repository) CreateUser(ctx context.Context, email, passwordHash string,
 	return u, err
 }
 
+func (r *Repository) CreateGuestUser(ctx context.Context, email, passwordHash string, now time.Time) (model.User, error) {
+	var u model.User
+	err := r.pool.QueryRow(ctx, `
+		INSERT INTO users(email, password_hash, is_guest, created_at)
+		VALUES ($1, $2, true, $3)
+		RETURNING id, email, password_hash, is_guest, created_at
+	`, email, passwordHash, now.UTC()).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.IsGuest, &u.CreatedAt)
+	return u, err
+}
+
 func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	var u model.User
 	err := r.pool.QueryRow(ctx, `
@@ -640,8 +650,8 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*model.U
 func (r *Repository) GetUserByID(ctx context.Context, id int64) (*model.User, error) {
 	var u model.User
 	err := r.pool.QueryRow(ctx, `
-		SELECT id, email, password_hash, name, cefr_level, created_at FROM users WHERE id = $1
-	`, id).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.CEFRLevel, &u.CreatedAt)
+		SELECT id, email, password_hash, name, cefr_level, is_guest, created_at FROM users WHERE id = $1
+	`, id).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.CEFRLevel, &u.IsGuest, &u.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
