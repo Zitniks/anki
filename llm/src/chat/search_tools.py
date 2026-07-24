@@ -1,11 +1,10 @@
-"""Agentic RAG search tools (Epic: AGENTIC_RAG_ENABLED).
+"""Agentic RAG search tools.
 
 Thin LangChain-tool wrappers over the existing per-corpus retrievers
 (``analytics/retrievers.py``) — no new data-access paths, no changes to
-``TutorRetriever`` or the corpus structure. Used only by the new agentic
-graph branch (``chat/graph.py``, gated by ``settings.AGENTIC_RAG_ENABLED``);
-the old router-based branch keeps calling the retrievers directly via
-``_route()`` and never sees these tools.
+``TutorRetriever`` or the corpus structure. Bound alongside the regular
+action tools (``chat/tools.py::TOOLS``) in ``chat/graph.py``'s single model
+call, so the agent can call either kind of tool freely.
 """
 
 import asyncio

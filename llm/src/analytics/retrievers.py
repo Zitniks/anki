@@ -1,10 +1,10 @@
 """LangChain ``BaseRetriever`` adapters over the tutor's per-corpus search functions.
 
 Each retriever wraps an existing ``search_*()`` function behind a uniform
-``.ainvoke(query) -> list[Document]`` contract, so ``chat/rag_router.py`` can
-call any of them the same way regardless of what runs underneath (hybrid
-vector+BM25 SQL, pure vector, or chunk-level vector). The search logic itself
-stays in ``analytics/*.py`` — this module only adapts it to LangChain.
+``.ainvoke(query) -> list[Document]`` contract, so ``chat/search_tools.py``'s
+tools can call any of them the same way regardless of what runs underneath
+(hybrid vector+BM25 SQL, pure vector, or chunk-level vector). The search logic
+itself stays in ``analytics/*.py`` — this module only adapts it to LangChain.
 """
 
 from abc import abstractmethod

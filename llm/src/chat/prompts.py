@@ -95,10 +95,9 @@ def _image_tools_guidance() -> str:
     )
 
 
-# Agentic RAG (settings.AGENTIC_RAG_ENABLED) — mixed into the built prompt
-# only for the agentic graph branch (StudentPromptConfig.build below), never
-# edited into MAIN_SYSTEM_PROMPT itself, which the router branch still uses
-# completely unchanged.
+# Agentic RAG search policy — mixed into the built prompt (StudentPromptConfig.build
+# below) rather than edited into MAIN_SYSTEM_PROMPT itself, kept as a separate
+# constant for clarity/testability.
 AGENTIC_SEARCH_POLICY = """
 ВАЖНО - ПОИСК В МАТЕРИАЛАХ КУРСА:
 - Всегда ищи в материалах (search_explanations/search_examples/search_exercises/search_all) перед ответом на вопрос про грамматику, значение слова или употребление конструкции. Не отвечай по памяти, даже если ответ кажется очевидным.
@@ -108,11 +107,11 @@ AGENTIC_SEARCH_POLICY = """
 """.strip()
 
 # Filled in by chat/graph.py::_classify with the classifier's own intent/
-# confidence for this turn — a hint, not a routing instruction (the agentic
-# branch doesn't let classify decide what to search, unlike the router
-# branch). classify runs AFTER prepare (which builds the system prompt), so
-# this can't be baked into AGENTIC_SEARCH_POLICY/build() below — it's
-# injected as a separate SystemMessage once classify has actually run.
+# confidence for this turn — a hint, not a routing instruction (classify
+# doesn't decide what to search, the agent does). classify runs AFTER prepare
+# (which builds the system prompt), so this can't be baked into
+# AGENTIC_SEARCH_POLICY/build() below — it's injected as a separate
+# SystemMessage once classify has actually run.
 AGENTIC_INTENT_HINT_TEMPLATE = "Вероятное намерение: {intent}, уверенность {confidence:.2f}. Это подсказка, а не указание."
 
 
@@ -157,9 +156,7 @@ class StudentPromptConfig(PromptConfig):
             documents_context=ctx.documents_context,
             image_tools_guidance=_image_tools_guidance(),
         )
-        if settings.AGENTIC_RAG_ENABLED:
-            text += "\n\n" + AGENTIC_SEARCH_POLICY
-        return text
+        return text + "\n\n" + AGENTIC_SEARCH_POLICY
 
 
 SYSTEM_PROMPTS: dict[str, PromptConfig] = {

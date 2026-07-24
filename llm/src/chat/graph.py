@@ -2,14 +2,19 @@
 
 Streaming and event normalization live in :mod:`chat.streaming`; this module
 only owns graph construction.
+
+Agentic RAG only — the model decides when/what to search via the tools in
+``chat/search_tools.py`` instead of a deterministic classify->route pre-fetch.
+The router-based predecessor (a fixed classify->route->model loop with
+``chat/rag_router.py::resolve_route`` choosing which corpus to pre-fetch)
+was removed once this branch was proven out (see git history and
+scripts/eval_agentic_rag.py for the router-vs-agentic comparison it replaced).
 """
 
-import asyncio
 import time
 from dataclasses import asdict
 from typing import Literal
 
-from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.config import get_stream_writer
 from langgraph.graph import StateGraph, START, END
@@ -18,13 +23,6 @@ from langgraph.prebuilt import ToolNode
 from langgraph.runtime import Runtime
 
 from adaptive.engine import decide as adaptive_decide
-from analytics.retrievers import (
-    ExampleRetriever,
-    ExerciseRetriever,
-    ExplanationRetriever,
-    TutorRetriever,
-    reciprocal_rank_fusion,
-)
 from chat.intent import classify_intent
 from chat.persistence import convert_to_langchain_messages
 from chat.prompts import AGENTIC_INTENT_HINT_TEMPLATE, SYSTEM_PROMPTS
@@ -32,7 +30,6 @@ from chat.rag_router import REFUSAL_MESSAGE, resolve_route
 from chat.search_tools import SEARCH_TOOLS, _SEARCH_TOOL_CORPUS, _SEARCH_TOOL_NAMES, run_search_all
 from chat.state import TutorRuntimeContext, TutorState
 from chat.tools import TOOLS
-from database import async_session_factory
 from logger import llm_logger
 from repositories import storage
 from settings import settings
@@ -40,29 +37,17 @@ from settings import settings
 _TOOL_ERROR_MESSAGE = ("Инструмент завершился ошибкой. Сообщи об этом репетитору одним предложением, "
                        "не пытайся повторно вызывать тот же инструмент с теми же аргументами.")
 
-_llm_with_tools = settings.llm.bind_tools(TOOLS)
-_tool_node = ToolNode(TOOLS, handle_tool_errors=_TOOL_ERROR_MESSAGE)
-
-# Agentic RAG branch (settings.AGENTIC_RAG_ENABLED) — the model gets the four
-# search tools *in addition to* the existing TOOLS (deck/progress/content
-# tools), not instead of them. Those existing tools are untouched and must
-# keep working exactly as before inside this branch too (a chat with agentic
-# RAG enabled should still be able to add words to the deck, etc.) — this is
-# one combined ToolNode rather than two, so a single model turn can freely
-# mix a search-tool call with a regular-tool call without either node
-# silently failing to find the other's tool.
-_llm_with_agentic_tools = settings.llm.bind_tools(TOOLS + SEARCH_TOOLS)
-_agentic_tool_node = ToolNode(TOOLS + SEARCH_TOOLS, handle_tool_errors=_TOOL_ERROR_MESSAGE)
+# The model gets the four search tools *in addition to* the existing TOOLS
+# (deck/progress/content tools), not instead of them — one combined
+# bind_tools/ToolNode rather than two, so a single model turn can freely mix
+# a search-tool call with a regular-tool call without either node silently
+# failing to find the other's tool.
+_llm_with_tools = settings.llm.bind_tools(TOOLS + SEARCH_TOOLS)
+_tool_node = ToolNode(TOOLS + SEARCH_TOOLS, handle_tool_errors=_TOOL_ERROR_MESSAGE)
 # Tool-free — used only by `_finalize`'s forced-retry model call, which must
 # not be able to request another tool (that branch is a dead end: finalize
 # only has an edge to END, no way back into agent/search_tools).
 _llm_plain = settings.llm
-
-_RETRIEVER_CLASSES: dict[str, type[TutorRetriever]] = {
-    "exercise": ExerciseRetriever,
-    "explanation": ExplanationRetriever,
-    "example": ExampleRetriever,
-}
 
 
 def _prepare_messages(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
@@ -80,16 +65,6 @@ def _prepare_messages(state: TutorState, runtime: Runtime[TutorRuntimeContext]) 
     }
 
 
-async def _call_model(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
-    response = await _llm_with_tools.ainvoke(state["messages"])
-    return {"messages": [response]}
-
-
-def _should_continue(state: TutorState) -> Literal["tools", "__end__"]:
-    last = state["messages"][-1]
-    return "tools" if getattr(last, "tool_calls", None) else END
-
-
 def _extract_text(message: HumanMessage) -> str:
     """Pull the plain-text part out of a ``HumanMessage`` (content may be a string or content blocks)."""
     if isinstance(message.content, str):
@@ -101,11 +76,14 @@ def _extract_text(message: HumanMessage) -> str:
 
 
 async def _classify(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
-    """Determine which RAG (if any) this turn needs.
+    """Off-topic gate + intent hint for the agent.
 
-    Combines the Adaptive Engine's pedagogical decision (hard priority) with
-    an LLM intent classification of the student's message. See
-    :func:`chat.rag_router.resolve_route` for the priority rules.
+    Still computes the Adaptive Engine's pedagogical decision purely for
+    observability/logging — it used to also force a specific RAG corpus for
+    the now-removed deterministic router; that mechanism is gone, but the
+    decision itself is still worth logging (see IMPROVEMENTS_SPEC.md Epic 7).
+    Off-topic refusal was always intent-only (never influenced by the engine
+    decision), so removing that mechanism doesn't change refusal behavior.
     """
     ctx = runtime.context
     if ctx.current_user_message is None:
@@ -118,36 +96,27 @@ async def _classify(state: TutorState, runtime: Runtime[TutorRuntimeContext]) ->
     intent = await classify_intent(query)
     mastery_records = await storage.topic_mastery.get_by_project(ctx.project_id)
     engine_decision = adaptive_decide(mastery_records)
+    refusal = resolve_route(intent)
 
-    route = resolve_route(engine_decision, intent)
     llm_logger.info(
-        f"chat.rag_classify project_id={ctx.project_id} intent={intent.intent} "
+        f"chat.classify project_id={ctx.project_id} intent={intent.intent} "
         f"confidence={intent.confidence:.2f} engine_action={engine_decision.action} "
-        f"route_mode={route.mode} retrievers={route.retrievers} reason={route.reason!r}")
-    # `intent`/`confidence` are extra keys on top of RouteDecision's own fields
-    # (mode/retrievers/topic/reason/message) — additive, so the router branch
-    # (which only ever reads mode/retrievers/topic) is unaffected.
-    result: dict = {"route_decision": {**asdict(route), "intent": intent.intent, "confidence": intent.confidence}}
+        f"refuse={refusal is not None}")
 
-    # Agentic branch only: `_prepare_messages` (which builds the system
-    # prompt) already ran before this node, so AGENTIC_SEARCH_POLICY was
-    # mixed in without per-turn data — the classifier's own hint has to be
-    # injected as a separate SystemMessage here, once classify has actually
-    # run. Guarded by the flag so the router branch never gets this extra
-    # message (its behavior must stay unchanged with the flag off).
-    if settings.AGENTIC_RAG_ENABLED:
-        hint = AGENTIC_INTENT_HINT_TEMPLATE.format(intent=intent.intent, confidence=intent.confidence)
-        result["messages"] = [SystemMessage(content=hint)]
+    hint = AGENTIC_INTENT_HINT_TEMPLATE.format(intent=intent.intent, confidence=intent.confidence)
+    return {
+        "route_decision": {"refuse": refusal is not None, "message": refusal,
+                            "intent": intent.intent, "confidence": intent.confidence},
+        "messages": [SystemMessage(content=hint)],
         # Этап 4 timeout budget: stamped once here (classify runs exactly once
         # per turn, before the agent<->search_tools loop), checked by
         # `_agentic_should_continue` on every iteration of that loop.
-        result["agentic_deadline"] = time.monotonic() + settings.AGENTIC_RAG_TIMEOUT_SECONDS
-
-    return result
+        "agentic_deadline": time.monotonic() + settings.AGENTIC_RAG_TIMEOUT_SECONDS,
+    }
 
 
 async def _refuse(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
-    """Return the canned off-topic refusal without invoking the LLM or any RAG retriever.
+    """Return the canned off-topic refusal without invoking the LLM or any search tool.
 
     Emits the text via a custom stream event (picked up by
     ``chat.streaming.normalize_agent_events``) instead of an LLM call, since no
@@ -160,77 +129,19 @@ async def _refuse(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> d
     return {"messages": [AIMessage(content=message)]}
 
 
-def _route_or_refuse(state: TutorState) -> Literal["route", "refuse"]:
+def _classify_or_refuse(state: TutorState) -> Literal["agent", "refuse"]:
     route_data = state.get("route_decision")
-    if route_data and route_data.get("mode") == "refuse":
+    if route_data and route_data.get("refuse"):
         return "refuse"
-    return "route"
+    return "agent"
 
 
-def _format_documents(docs: list[Document], max_chars: int = 3000) -> str:
-    """Assemble retrieved documents into a context block for LLM injection."""
-    if not docs:
-        return ""
-
-    lines = ["=== Retrieved Context ==="]
-    total = 0
-    for i, doc in enumerate(docs, 1):
-        label = doc.metadata.get("source", "unknown")
-        block = f"\n[{i}] ({label})\n{doc.page_content[:800]}\n---"
-        if total + len(block) > max_chars:
-            break
-        lines.append(block)
-        total += len(block)
-    return "\n".join(lines)
-
-
-async def _route(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
-    """Query the retriever(s) chosen by ``_classify`` and inject their context."""
-    route_data = state.get("route_decision")
-    if not route_data or route_data["mode"] == "none":
-        return {}
-
-    ctx = runtime.context
-    query = _extract_text(ctx.current_user_message) if ctx.current_user_message else ""
-    if not query:
-        return {}
-
-    user_id = str(ctx.user_id)
-    topic = route_data.get("topic")
-    retrievers = [
-        _RETRIEVER_CLASSES[name](session_factory=async_session_factory, user_id=user_id, topic=topic, limit=5)
-        for name in route_data["retrievers"]
-    ]
-
-    if route_data["mode"] == "ensemble":
-        result_sets = await asyncio.gather(*(r.ainvoke(query) for r in retrievers))
-        docs = reciprocal_rank_fusion(list(result_sets))
-    else:
-        docs = await retrievers[0].ainvoke(query)
-
-    llm_logger.info(
-        f"chat.rag_route project_id={ctx.project_id} mode={route_data['mode']} "
-        f"retrievers={route_data['retrievers']} found={len(docs)}")
-
-    context = _format_documents(docs)
-    return {"messages": [SystemMessage(content=context)]} if context else {}
-
-
-# ===========================================================================
-# Agentic RAG branch (settings.AGENTIC_RAG_ENABLED) — hybrid schema:
-#   prepare -> classify -> agent <-> search_tools -> finalize -> end
-# `classify` is shared with the router branch (still resolves off-topic
-# refusal), but its RouteDecision no longer drives a deterministic RAG
-# pre-fetch here — it's injected into the prompt as a hint only (Этап 3).
-# ===========================================================================
-
-
-async def _call_agentic_model(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
-    response = await _llm_with_agentic_tools.ainvoke(state["messages"])
+async def _call_model(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
+    response = await _llm_with_tools.ainvoke(state["messages"])
     return {"messages": [response]}
 
 
-def _agentic_should_continue(state: TutorState) -> Literal["search_tools", "finalize"]:
+def _should_continue(state: TutorState) -> Literal["search_tools", "finalize"]:
     last = state["messages"][-1]
     if not getattr(last, "tool_calls", None):
         return "finalize"
@@ -243,27 +154,21 @@ def _agentic_should_continue(state: TutorState) -> Literal["search_tools", "fina
     return "search_tools"
 
 
-def _classify_or_refuse_agentic(state: TutorState) -> Literal["agent", "refuse"]:
-    route_data = state.get("route_decision")
-    if route_data and route_data.get("mode") == "refuse":
-        return "refuse"
-    return "agent"
-
-
 def _tool_call_key(name: str, args: dict) -> tuple:
     return (name, tuple(sorted(args.items())))
 
 
 async def _search_tools_node(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
-    """Executes pending tool calls for the agentic branch's ``agent`` node.
+    """Executes pending tool calls for the ``agent`` node.
 
     Wraps the plain ``ToolNode(TOOLS + SEARCH_TOOLS)`` (still used for actual
     execution, so ``ToolRuntime`` injection stays correct) with three things
-    the spec asks for that a stock ``ToolNode`` can't do on its own:
-    per-turn search-call counting/limiting, anti-loop deduplication, and
-    ``corpora_used``/``retrieved_docs`` tracking for Этап 5's metrics. Every
-    tool_call still gets exactly one ToolMessage (some real, some synthetic
-    stubs for skipped/duplicate calls) — never left dangling.
+    a stock ``ToolNode`` can't do on its own: per-turn search-call
+    counting/limiting, anti-loop deduplication, and
+    ``corpora_used``/``retrieved_docs`` tracking (used by
+    scripts/eval_agentic_rag.py). Every tool_call still gets exactly one
+    ToolMessage (some real, some synthetic stubs for skipped/duplicate calls)
+    — never left dangling.
     """
     last = state["messages"][-1]
     calls = getattr(last, "tool_calls", None) or []
@@ -308,7 +213,7 @@ async def _search_tools_node(state: TutorState, runtime: Runtime[TutorRuntimeCon
     result_messages: list = list(stub_messages)
     if to_execute:
         stub_ai_message = AIMessage(content="", tool_calls=to_execute)
-        tool_result = await _agentic_tool_node.ainvoke({"messages": [stub_ai_message]})
+        tool_result = await _tool_node.ainvoke({"messages": [stub_ai_message]})
         executed_msgs = tool_result["messages"]
         result_messages.extend(executed_msgs)
 
@@ -333,13 +238,13 @@ _SKIP_SEARCH_CONFIDENCE_THRESHOLD = 0.6
 
 
 async def _finalize(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
-    """Terminal node of the agentic branch.
+    """Terminal node of the graph.
 
-    Two responsibilities, both Этап 4 safety nets:
+    Two responsibilities:
     1. If reached via the iteration-limit/timeout bypass in
-       `_agentic_should_continue` (skipping `search_tools` entirely), the
-       last AIMessage may still have unresolved tool_calls — stub them so
-       every call_id gets exactly one ToolMessage.
+       `_should_continue` (skipping `search_tools` entirely), the last
+       AIMessage may still have unresolved tool_calls — stub them so every
+       call_id gets exactly one ToolMessage.
     2. Skip-search safety net: an educational-intent turn that made it all
        the way here without ever searching gets exactly one forced
        `search_all` pass + one more (tool-free) model call. Guarded by
@@ -375,7 +280,7 @@ async def _finalize(state: TutorState, runtime: Runtime[TutorRuntimeContext]) ->
     if not query:
         return {"messages": stub_messages} if stub_messages else {}
 
-    llm_logger.info(f"chat.agentic_forced_search project_id={ctx.project_id} intent={intent} "
+    llm_logger.info(f"chat.forced_search project_id={ctx.project_id} intent={intent} "
                     f"confidence={confidence:.2f} reason='search_calls=0 on educational intent'")
     forced_result = await run_search_all(str(ctx.user_id), query)
     forced_context = SystemMessage(
@@ -394,38 +299,19 @@ async def _finalize(state: TutorState, runtime: Runtime[TutorRuntimeContext]) ->
 
 
 def build_tutor_graph() -> CompiledStateGraph:
-    """Build and compile the tutor LangGraph.
-
-    Branch choice (router vs. agentic RAG) is made here, once, at build time
-    — not inside a conditional-edge function re-checked per turn — so the
-    router branch's graph structure is exactly what it was before
-    AGENTIC_RAG_ENABLED existed when the flag is off.
-    """
+    """Build and compile the tutor LangGraph: prepare -> classify -> agent <-> search_tools -> finalize -> end."""
     builder = StateGraph(TutorState, context_schema=TutorRuntimeContext)
     builder.add_node("prepare", _prepare_messages)
     builder.add_node("classify", _classify)
+    builder.add_node("agent", _call_model)
+    builder.add_node("search_tools", _search_tools_node)
+    builder.add_node("refuse", _refuse)
+    builder.add_node("finalize", _finalize)
     builder.add_edge(START, "prepare")
     builder.add_edge("prepare", "classify")
-
-    if settings.AGENTIC_RAG_ENABLED:
-        builder.add_node("agent", _call_agentic_model)
-        builder.add_node("search_tools", _search_tools_node)
-        builder.add_node("refuse", _refuse)
-        builder.add_node("finalize", _finalize)
-        builder.add_conditional_edges("classify", _classify_or_refuse_agentic)
-        builder.add_conditional_edges("agent", _agentic_should_continue)
-        builder.add_edge("search_tools", "agent")
-        builder.add_edge("refuse", END)
-        builder.add_edge("finalize", END)
-    else:
-        builder.add_node("route", _route)
-        builder.add_node("refuse", _refuse)
-        builder.add_node("model", _call_model)
-        builder.add_node("tools", _tool_node)
-        builder.add_conditional_edges("classify", _route_or_refuse)
-        builder.add_edge("route", "model")
-        builder.add_edge("refuse", END)
-        builder.add_conditional_edges("model", _should_continue)
-        builder.add_edge("tools", "model")
-
+    builder.add_conditional_edges("classify", _classify_or_refuse)
+    builder.add_conditional_edges("agent", _should_continue)
+    builder.add_edge("search_tools", "agent")
+    builder.add_edge("refuse", END)
+    builder.add_edge("finalize", END)
     return builder.compile()

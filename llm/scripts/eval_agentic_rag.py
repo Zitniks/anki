@@ -1,22 +1,26 @@
-"""Agentic RAG Этап 5 — compare router branch vs agentic branch on both
-quality and latency, with and without settings.AGENTIC_RAG_ENABLED.
+"""Agentic RAG quality/latency benchmark.
 
 Run: uv run python scripts/eval_agentic_rag.py [N]
 
 No pre-existing eval dataset/script was found in this repo copy despite the
-task assuming one exists (analytics/embeddings.py's docstring references a
-"scripts/eval_rag.py" and a "130-query eval set" from when embeddings were
-switched — neither the script nor the labeled dataset are present in this
-`ankis/llm` mirror; likely never synced over from adaptive-learning-repetitor).
-So this script builds its own small representative query set (reusing
-measure_chat_latency.py's 24 queries) and computes what CAN be measured
-without labeled ground truth: latency percentiles, real LLM-judge Faithfulness/
-Relevancy scores (settings.llm_cheap, same structured-output pattern as
-chat/intent.py), and the four new agentic-specific metrics from the task spec.
+original task assuming one exists (analytics/embeddings.py's docstring
+references a "scripts/eval_rag.py" and a "130-query eval set" from when
+embeddings were switched — neither the script nor the labeled dataset are
+present in this `ankis/llm` mirror; likely never synced over from
+adaptive-learning-repetitor). So this script builds its own small
+representative query set (reusing measure_chat_latency.py's queries) and
+computes what CAN be measured without labeled ground truth: latency
+percentiles, real LLM-judge Faithfulness/Relevancy scores (settings.llm_cheap,
+same structured-output pattern as chat/intent.py), and search-behavior
+metrics (share of educational queries answered without searching, average
+search calls, share of multi-corpus turns).
 
 Recall@5 needs a labeled "correct docs per query" set that doesn't exist here
-— reported as N/A with the reason, not faked. See the printed report for the
-full honesty caveat this run's corpus size implies.
+— reported as N/A with the reason, not faked.
+
+Originally compared the router branch against the agentic branch — the
+router branch (and settings.AGENTIC_RAG_ENABLED) were removed once agentic
+RAG became the only system, so this now just benchmarks the one graph.
 """
 
 import asyncio
@@ -28,7 +32,7 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage, SystemMessage  # noqa: E402
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
 from chat.graph import build_tutor_graph  # noqa: E402
@@ -122,15 +126,13 @@ async def run_one(graph, item: dict) -> dict:
     messages = (final_output or {}).get("messages", [])
     final_answer = next((m.content for m in reversed(messages) if isinstance(m, AIMessage) and m.content), "")
 
-    # Context actually available to the model this turn — router branch: the
-    # SystemMessage _route() injects; agentic branch: every search-tool
-    # ToolMessage (real hits AND limit/dedup stubs, doesn't matter for judging
-    # since a stub means "no new context", which the judge can see for itself).
+    # Context actually available to the model this turn: every search-tool
+    # ToolMessage (real hits AND limit/dedup stubs — a stub means "no new
+    # context", which the judge can see for itself) plus the forced-search
+    # SystemMessage from `_finalize`'s skip-search safety net, if it fired.
     context_parts = []
     for m in messages:
-        if isinstance(m, SystemMessage) and "Retrieved Context" in str(m.content):
-            context_parts.append(m.content)
-        elif isinstance(m, SystemMessage) and "обязательного поиска" in str(m.content):
+        if isinstance(m, SystemMessage) and "обязательного поиска" in str(m.content):
             context_parts.append(m.content)
         elif isinstance(m, ToolMessage) and getattr(m, "name", None) in _SEARCH_TOOL_NAMES:
             context_parts.append(m.content)
@@ -139,17 +141,6 @@ async def run_one(graph, item: dict) -> dict:
     searched = bool(context_parts)
     corpora_used = (final_output or {}).get("corpora_used") or set()
     search_calls = (final_output or {}).get("search_calls", 0)
-    route_decision = (final_output or {}).get("route_decision") or {}
-    if not settings.AGENTIC_RAG_ENABLED:
-        # Router branch has no search_calls counter — derive an equivalent
-        # from route_decision so the "share without search" metric is
-        # comparable across both branches.
-        searched = route_decision.get("mode") not in (None, "none", "refuse") and "Retrieved Context" in context_text
-        search_calls = 1 if searched else 0
-        if route_decision.get("mode") == "ensemble":
-            corpora_used = {"exercise", "explanation", "example"}
-        elif route_decision.get("retrievers"):
-            corpora_used = set(route_decision["retrievers"])
 
     q = await judge(query, context_text, final_answer)
 
@@ -176,12 +167,10 @@ def pct(values: list[float], p: float) -> float:
     return s[idx]
 
 
-async def run_branch(label: str, enabled: bool, n: int) -> list[dict]:
-    settings.AGENTIC_RAG_ENABLED = enabled
+async def run_all(n: int) -> list[dict]:
     graph = build_tutor_graph()
     queries = (EVAL_QUERIES * ((n // len(EVAL_QUERIES)) + 1))[:n]
     results = []
-    print(f"\n--- {label} (AGENTIC_RAG_ENABLED={enabled}) ---")
     for i, item in enumerate(queries, 1):
         r = await run_one(graph, item)
         results.append(r)
@@ -192,7 +181,7 @@ async def run_branch(label: str, enabled: bool, n: int) -> list[dict]:
     return results
 
 
-def summarize(label: str, results: list[dict]) -> dict:
+def summarize(results: list[dict]) -> dict:
     totals = [r["total_s"] for r in results]
     ttfts = [r["ttft_s"] for r in results if r["ttft_s"] is not None]
     faith = [r["faithfulness"] for r in results]
@@ -203,12 +192,10 @@ def summarize(label: str, results: list[dict]) -> dict:
     avg_search_calls = statistics.mean([r["search_calls"] for r in edu]) if edu else 0.0
     total_tokens = sum(r["input_tokens"] + r["output_tokens"] for r in results)
 
-    summary = {
-        "label": label,
+    return {
         "n": len(results),
         "faithfulness_mean": statistics.mean(faith) if faith else float("nan"),
         "relevancy_mean": statistics.mean(rel) if rel else float("nan"),
-        "recall_at_5": None,  # see honesty caveat in report
         "latency_p50": pct(totals, 0.50),
         "latency_p95": pct(totals, 0.95),
         "ttft_p50": pct(ttfts, 0.50) if ttfts else float("nan"),
@@ -218,18 +205,16 @@ def summarize(label: str, results: list[dict]) -> dict:
         "total_tokens": total_tokens,
         "tokens_per_query": total_tokens / len(results) if results else 0,
     }
-    return summary
 
 
-def print_report(router_summary: dict, agentic_summary: dict) -> None:
-    print("\n" + "=" * 78)
-    print("ИТОГОВАЯ ТАБЛИЦА — router (флаг выкл.) vs agentic (флаг вкл.)")
-    print("=" * 78)
+def print_report(summary: dict) -> None:
+    print("\n" + "=" * 60)
+    print("ИТОГОВАЯ ТАБЛИЦА")
+    print("=" * 60)
     rows = [
         ("N запросов", "n", "{}"),
         ("Faithfulness (LLM-judge, не RAGAS)", "faithfulness_mean", "{:.2f}"),
         ("Answer Relevancy (LLM-judge)", "relevancy_mean", "{:.2f}"),
-        ("Recall@5", "recall_at_5", "{}"),
         ("Латентность p50, с", "latency_p50", "{:.2f}"),
         ("Латентность p95, с", "latency_p95", "{:.2f}"),
         ("TTFT p50, с", "ttft_p50", "{:.2f}"),
@@ -239,45 +224,20 @@ def print_report(router_summary: dict, agentic_summary: dict) -> None:
         ("Токенов/запрос (input+output)", "tokens_per_query", "{:.0f}"),
     ]
     label_w = max(len(r[0]) for r in rows)
-    print(f"{'Метрика':<{label_w}}  {'router':>12}  {'agentic':>12}")
     for name, key, fmt in rows:
-        rv = router_summary[key]
-        av = agentic_summary[key]
-        rv_s = fmt.format(rv) if rv is not None else "N/A"
-        av_s = fmt.format(av) if av is not None else "N/A"
-        print(f"{name:<{label_w}}  {rv_s:>12}  {av_s:>12}")
+        v = summary[key]
+        v_s = fmt.format(v) if v is not None else "N/A"
+        print(f"{name:<{label_w}}  {v_s:>10}")
 
-    print("\nПороги из ТЗ и честный статус:")
-    print(f"  Faithfulness >= 0.85: router={'PASS' if router_summary['faithfulness_mean'] >= 0.85 else 'FAIL'} "
-          f"agentic={'PASS' if agentic_summary['faithfulness_mean'] >= 0.85 else 'FAIL'} "
-          f"(LLM-judge на {router_summary['n']} запросах, НЕ формальный RAGAS-eval)")
-    print(f"  Answer Relevancy >= 0.79: router={'PASS' if router_summary['relevancy_mean'] >= 0.79 else 'FAIL'} "
-          f"agentic={'PASS' if agentic_summary['relevancy_mean'] >= 0.79 else 'FAIL'}")
-    print("  Recall@5 >= 87%: N/A ОБЕ ветки — нет размеченного датасета (\"какие документы правильные "
-          "для запроса X\") ни в этом репозитории, ни в локальной llm-db. analytics/embeddings.py "
-          "ссылается на историческую цифру recall@5=76.9% с отдельным 130-запросным eval-датасетом, "
-          "которого нет в этой копии `ankis/llm` (не засинкано из adaptive-learning-repetitor). Корпус "
-          "в этой среде — 3 строки, засеянные вручную в Этапе 1 (все про Present Perfect), недостаточно "
-          "для честного Recall@5 в принципе.")
-    print(f"  Латентность p50 <= 2.5s: router={'PASS' if router_summary['latency_p50'] <= 2.5 else 'FAIL'} "
-          f"agentic={'PASS' if agentic_summary['latency_p50'] <= 2.5 else 'FAIL'}")
-    print(f"  Латентность p95 <= 5s: router={'PASS' if router_summary['latency_p95'] <= 5 else 'FAIL'} "
-          f"agentic={'PASS' if agentic_summary['latency_p95'] <= 5 else 'FAIL'}")
-    print(f"  Доля учебных без поиска <= 5%: agentic="
-          f"{'PASS' if agentic_summary['pct_educational_no_search'] <= 5 else 'FAIL'}")
-    print(f"  Среднее поисков 1.2-1.5: agentic="
-          f"{'PASS' if 1.2 <= agentic_summary['avg_search_calls_per_educational_query'] <= 1.5 else 'FAIL'}")
-    print(f"  Доля >1 корпуса (не близко к 0): agentic="
-          f"{'OK' if agentic_summary['pct_multi_corpus'] > 5 else 'БЛИЗКО К НУЛЮ — см. предупреждение в ТЗ'}")
+    print("\nRecall@5: N/A — нет размеченного датасета (\"какие документы правильные для запроса X\") "
+          "ни в этом репозитории, ни в локальной llm-db. Корпус в этой среде — 3 строки, засеянные "
+          "вручную в Этапе 1 (все про Present Perfect), недостаточно для честного Recall@5 в принципе.")
 
 
 async def main() -> None:
     n = int(sys.argv[1]) if len(sys.argv) > 1 else len(EVAL_QUERIES)
-    router_results = await run_branch("ROUTER", False, n)
-    agentic_results = await run_branch("AGENTIC", True, n)
-    router_summary = summarize("router", router_results)
-    agentic_summary = summarize("agentic", agentic_results)
-    print_report(router_summary, agentic_summary)
+    results = await run_all(n)
+    print_report(summarize(results))
 
 
 if __name__ == "__main__":

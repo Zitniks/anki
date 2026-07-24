@@ -45,10 +45,10 @@ TOOL_STATUS_MAP = {
     "list_materials": "Загружаю список материалов",
     "get_material_by_id": "Открываю материал",
     "save_material": "Сохраняю материал",
-    # Agentic RAG (settings.AGENTIC_RAG_ENABLED) — without these the fallback
-    # ("Обработка...") already fires on any on_tool_start, so the user was
-    # never staring at a blank screen either way; these are just more
-    # specific than the generic fallback.
+    # Agentic RAG search tools (chat/search_tools.py) — without these the
+    # fallback ("Обработка...") already fires on any on_tool_start, so the
+    # user was never staring at a blank screen either way; these are just
+    # more specific than the generic fallback.
     "search_explanations": "Ищу объяснение в материалах",
     "search_examples": "Ищу примеры в материалах",
     "search_exercises": "Ищу упражнения в материалах",
