@@ -30,9 +30,7 @@ MAIN_SYSTEM_PROMPT = """
 - ВСЕГДА используй информацию о студенте, ЕСЛИ тебя не попросили сделать иначе.
 Поведение инструментов (описания самих инструментов см. в их схемах):
 - Если в истории хода есть системное сообщение "=== Retrieved Context ===" — это уже найденные под текущий запрос материалы/примеры/объяснения. Используй их напрямую в ответе, НЕ вызывай search_materials/list_materials/get_material_by_id повторно для того же запроса — это дублирует уже выполненный поиск.
-- search_stock_photos: для бытовых сцен и реальных объектов (рынок, доктор, дождливая улица) используй вместо generate_image. Query ВСЕГДА на английском. Если репетитор просит "ещё", "другие", "найди еще" фото — ОБЯЗАТЕЛЬНО вызови инструмент заново с тем же query и большим page (2, 3, ...). История прошлых ходов НЕ заменяет новый вызов: ты не видишь свои предыдущие tool calls, поэтому каждый запрос на фото — это новый вызов инструмента.
-- generate_image: для нереалистичных, художественных или специфических иллюстраций. Для правок ранее созданной картинки снова вызови generate_image с новым подробным описанием — предыдущие изображения автоматически передаются как визуальный референс.
-- Если непонятно, что нужно — сгенерировать картинку или найти готовое фото — спроси репетитора одним коротким вопросом, не вызывай инструмент.
+{image_tools_guidance}
 - process_youtube_link / fetch_url_content: вызывай автоматически при наличии URL, даже без явной просьбы. YouTube → process_youtube_link, остальные HTTP(S) → fetch_url_content. После получения текста составь упражнение на его основе:
   * Статья/обычное видео → comprehension questions, true/false, словарь из текста, gap-fill на ключевой отрывок.
   * Музыкальный клип → gap-fill на ключевую лексику или грамматику уровня студента.
@@ -75,6 +73,28 @@ TRANSLATION_PROMPT = """
 """.strip()
 
 
+# search_stock_photos is only bound to the model when STOCK_PHOTO_ENABLED (see
+# chat/tools.py's TOOLS list) — without this, the prompt would keep telling the
+# model to prefer a tool it doesn't actually have, a dead instruction that was
+# found sitting unconditionally in MAIN_SYSTEM_PROMPT.
+def _image_tools_guidance() -> str:
+    if settings.STOCK_PHOTO_ENABLED:
+        return (
+            '- search_stock_photos: для бытовых сцен и реальных объектов (рынок, доктор, дождливая улица) используй вместо generate_image. '
+            'Query ВСЕГДА на английском. Если репетитор просит "ещё", "другие", "найди еще" фото — ОБЯЗАТЕЛЬНО вызови инструмент заново '
+            'с тем же query и большим page (2, 3, ...). История прошлых ходов НЕ заменяет новый вызов: ты не видишь свои предыдущие tool calls, '
+            'поэтому каждый запрос на фото — это новый вызов инструмента.\n'
+            '- generate_image: для нереалистичных, художественных или специфических иллюстраций. Для правок ранее созданной картинки снова вызови '
+            'generate_image с новым подробным описанием — предыдущие изображения автоматически передаются как визуальный референс.\n'
+            '- Если непонятно, что нужно — сгенерировать картинку или найти готовое фото — спроси репетитора одним коротким вопросом, не вызывай инструмент.'
+        )
+    return (
+        '- generate_image: для иллюстраций к уроку. Для правок ранее созданной картинки снова вызови generate_image с новым подробным описанием — '
+        'предыдущие изображения автоматически передаются как визуальный референс.\n'
+        '- Если непонятно, какую именно картинку сгенерировать — спроси репетитора одним коротким вопросом, не вызывай инструмент.'
+    )
+
+
 def format_vocabulary(vocab: list[str], empty_label: str = "пока нет") -> str:
     """Format vocabulary for LLM context: last N recent + M random from the rest."""
     if not vocab:
@@ -114,6 +134,7 @@ class StudentPromptConfig(PromptConfig):
             vocabulary=format_vocabulary(ctx.project.existing_vocabulary),
             topics=(", ".join(ctx.project.existing_topics[-20:]) if ctx.project.existing_topics else "пока нет"),
             documents_context=ctx.documents_context,
+            image_tools_guidance=_image_tools_guidance(),
         )
 
 
