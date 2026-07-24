@@ -105,6 +105,14 @@ class Settings(BaseSettings):
     # Graph
     GRAPH_RECURSION_LIMIT: int = 10
 
+    # Agentic RAG (chat/search_tools.py): lets the model call search tools
+    # directly instead of the deterministic classify->route pre-fetch. Default
+    # False keeps the existing router-based graph byte-identical — see
+    # chat/graph.py::build_tutor_graph, branch chosen at graph-build time.
+    AGENTIC_RAG_ENABLED: bool = False
+    AGENTIC_RAG_SEARCH_CALL_LIMIT: int = 3
+    AGENTIC_RAG_TIMEOUT_SECONDS: float = 12.0
+
     # Cheap LLM for extraction and chat name generation
     # Can use same or different API endpoint
     LLM_CHEAP_API_BASE: str | None = None  # If None, uses LLM_API_BASE

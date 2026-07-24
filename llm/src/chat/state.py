@@ -106,3 +106,12 @@ class TutorState(MessagesState):
 
     images: Annotated[list[dict], operator.add]
     route_decision: dict | None
+
+    # Agentic RAG only (chat/graph.py's new branch, chat/search_tools.py) —
+    # unused and absent from the initial state dict on the router branch, same
+    # as `route_decision` already is on this branch. TutorState is a TypedDict
+    # (via MessagesState), which has no real default-value mechanism, so these
+    # are read everywhere via `state.get(key, default)`, never assumed present.
+    search_calls: int
+    retrieved_docs: list[dict]
+    corpora_used: set[str]

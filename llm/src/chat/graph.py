@@ -28,6 +28,7 @@ from chat.intent import classify_intent
 from chat.persistence import convert_to_langchain_messages
 from chat.prompts import SYSTEM_PROMPTS
 from chat.rag_router import REFUSAL_MESSAGE, resolve_route
+from chat.search_tools import SEARCH_TOOLS
 from chat.state import TutorRuntimeContext, TutorState
 from chat.tools import TOOLS
 from database import async_session_factory
@@ -35,13 +36,22 @@ from logger import llm_logger
 from repositories import storage
 from settings import settings
 
+_TOOL_ERROR_MESSAGE = ("Инструмент завершился ошибкой. Сообщи об этом репетитору одним предложением, "
+                       "не пытайся повторно вызывать тот же инструмент с теми же аргументами.")
+
 _llm_with_tools = settings.llm.bind_tools(TOOLS)
-_tool_node = ToolNode(
-    TOOLS,
-    handle_tool_errors=(
-        "Инструмент завершился ошибкой. Сообщи об этом репетитору одним предложением, "
-        "не пытайся повторно вызывать тот же инструмент с теми же аргументами."),
-)
+_tool_node = ToolNode(TOOLS, handle_tool_errors=_TOOL_ERROR_MESSAGE)
+
+# Agentic RAG branch (settings.AGENTIC_RAG_ENABLED) — the model gets the four
+# search tools *in addition to* the existing TOOLS (deck/progress/content
+# tools), not instead of them. Those existing tools are untouched and must
+# keep working exactly as before inside this branch too (a chat with agentic
+# RAG enabled should still be able to add words to the deck, etc.) — this is
+# one combined ToolNode rather than two, so a single model turn can freely
+# mix a search-tool call with a regular-tool call without either node
+# silently failing to find the other's tool.
+_llm_with_agentic_tools = settings.llm.bind_tools(TOOLS + SEARCH_TOOLS)
+_agentic_tool_node = ToolNode(TOOLS + SEARCH_TOOLS, handle_tool_errors=_TOOL_ERROR_MESSAGE)
 
 _RETRIEVER_CLASSES: dict[str, type[TutorRetriever]] = {
     "exercise": ExerciseRetriever,
@@ -109,7 +119,13 @@ async def _classify(state: TutorState, runtime: Runtime[TutorRuntimeContext]) ->
         f"chat.rag_classify project_id={ctx.project_id} intent={intent.intent} "
         f"confidence={intent.confidence:.2f} engine_action={engine_decision.action} "
         f"route_mode={route.mode} retrievers={route.retrievers} reason={route.reason!r}")
-    return {"route_decision": asdict(route)}
+    # `intent`/`confidence` are extra keys on top of RouteDecision's own fields
+    # (mode/retrievers/topic/reason/message) — additive, so the router branch
+    # (which only ever reads mode/retrievers/topic) is unaffected. The agentic
+    # branch's prompt hint (Этап 3, AGENTIC_SEARCH_POLICY) needs these to tell
+    # the model "Вероятное намерение: X, уверенность Y" without re-running the
+    # classifier a second time.
+    return {"route_decision": {**asdict(route), "intent": intent.intent, "confidence": intent.confidence}}
 
 
 async def _refuse(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
@@ -182,20 +198,71 @@ async def _route(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> di
     return {"messages": [SystemMessage(content=context)]} if context else {}
 
 
+# ===========================================================================
+# Agentic RAG branch (settings.AGENTIC_RAG_ENABLED) — hybrid schema:
+#   prepare -> classify -> agent <-> search_tools -> finalize -> end
+# `classify` is shared with the router branch (still resolves off-topic
+# refusal), but its RouteDecision no longer drives a deterministic RAG
+# pre-fetch here — it's injected into the prompt as a hint only (Этап 3).
+# ===========================================================================
+
+
+async def _call_agentic_model(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
+    response = await _llm_with_agentic_tools.ainvoke(state["messages"])
+    return {"messages": [response]}
+
+
+def _agentic_should_continue(state: TutorState) -> Literal["search_tools", "finalize"]:
+    last = state["messages"][-1]
+    return "search_tools" if getattr(last, "tool_calls", None) else "finalize"
+
+
+def _classify_or_refuse_agentic(state: TutorState) -> Literal["agent", "refuse"]:
+    route_data = state.get("route_decision")
+    if route_data and route_data.get("mode") == "refuse":
+        return "refuse"
+    return "agent"
+
+
+async def _finalize(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
+    """Terminal node of the agentic branch. Passthrough for now — the
+    skip-search / forced-retry safety net is added in Этап 4."""
+    return {}
+
+
 def build_tutor_graph() -> CompiledStateGraph:
-    """Build and compile the tutor LangGraph."""
+    """Build and compile the tutor LangGraph.
+
+    Branch choice (router vs. agentic RAG) is made here, once, at build time
+    — not inside a conditional-edge function re-checked per turn — so the
+    router branch's graph structure is exactly what it was before
+    AGENTIC_RAG_ENABLED existed when the flag is off.
+    """
     builder = StateGraph(TutorState, context_schema=TutorRuntimeContext)
     builder.add_node("prepare", _prepare_messages)
     builder.add_node("classify", _classify)
-    builder.add_node("route", _route)
-    builder.add_node("refuse", _refuse)
-    builder.add_node("model", _call_model)
-    builder.add_node("tools", _tool_node)
     builder.add_edge(START, "prepare")
     builder.add_edge("prepare", "classify")
-    builder.add_conditional_edges("classify", _route_or_refuse)
-    builder.add_edge("route", "model")
-    builder.add_edge("refuse", END)
-    builder.add_conditional_edges("model", _should_continue)
-    builder.add_edge("tools", "model")
+
+    if settings.AGENTIC_RAG_ENABLED:
+        builder.add_node("agent", _call_agentic_model)
+        builder.add_node("search_tools", _agentic_tool_node)
+        builder.add_node("refuse", _refuse)
+        builder.add_node("finalize", _finalize)
+        builder.add_conditional_edges("classify", _classify_or_refuse_agentic)
+        builder.add_conditional_edges("agent", _agentic_should_continue)
+        builder.add_edge("search_tools", "agent")
+        builder.add_edge("refuse", END)
+        builder.add_edge("finalize", END)
+    else:
+        builder.add_node("route", _route)
+        builder.add_node("refuse", _refuse)
+        builder.add_node("model", _call_model)
+        builder.add_node("tools", _tool_node)
+        builder.add_conditional_edges("classify", _route_or_refuse)
+        builder.add_edge("route", "model")
+        builder.add_edge("refuse", END)
+        builder.add_conditional_edges("model", _should_continue)
+        builder.add_edge("tools", "model")
+
     return builder.compile()
