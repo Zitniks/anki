@@ -220,6 +220,18 @@ $("chat-launcher").addEventListener("click", () => {
 $("chat-form").addEventListener("submit", onChatSubmit);
 $("chat-input").addEventListener("input", autoResizeChatInput);
 
+// Tapping/clicking outside the open floating chat closes it — standard
+// popover behavior expected on mobile. Doesn't apply once the widget is
+// docked into the practice screen (#practice-chat-slot): there it's a
+// permanent part of that screen's layout, not a dismissible overlay.
+document.addEventListener("click", (e) => {
+  const widget = $("chat-widget");
+  if (widget.classList.contains("hidden")) return;
+  if (widget.parentElement?.id === "practice-chat-slot") return;
+  if (widget.contains(e.target) || $("chat-launcher").contains(e.target)) return;
+  widget.classList.add("hidden");
+});
+
 $("tips-launcher").addEventListener("click", () => {
   const opening = $("tips-widget").classList.contains("hidden");
   $("tips-widget").classList.toggle("hidden");
