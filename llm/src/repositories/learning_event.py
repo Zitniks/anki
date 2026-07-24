@@ -1,5 +1,7 @@
 """Repository for LearningEvent."""
 
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
@@ -33,6 +35,32 @@ class LearningEventRepository(BaseRepository[LearningEvent]):
                 .where(LearningEvent.project_id == project_id)
                 .order_by(LearningEvent.created_at.desc())
                 .limit(limit)
+            )
+            return [e.to_dict() for e in result.scalars().all()]
+
+    async def get_since(self, project_id: str, since: datetime) -> list[dict]:
+        """Return events created at or after `since`, newest first.
+
+        Parameters
+        ----------
+        project_id : str
+            Project UUID string.
+        since : datetime
+            Lower bound (inclusive) on `created_at`.
+
+        Returns
+        -------
+        list[dict]
+            Serialised LearningEvent dicts.
+        """
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(LearningEvent)
+                .where(
+                    LearningEvent.project_id == project_id,
+                    LearningEvent.created_at >= since,
+                )
+                .order_by(LearningEvent.created_at.desc())
             )
             return [e.to_dict() for e in result.scalars().all()]
 

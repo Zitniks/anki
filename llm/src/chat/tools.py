@@ -8,6 +8,7 @@ import asyncio
 import ipaddress
 import re
 import socket
+from datetime import datetime, timedelta, timezone
 from functools import partial
 from urllib.parse import urljoin, urlparse
 
@@ -93,6 +94,18 @@ class GetVocabularyInput(BaseModel):
     # drop the injected ToolRuntime. The LLM ignores the field; the tool
     # body ignores it. Safe to remove once we stop passing args_schema.
     noop: str | None = Field(default=None, description="Игнорируется.")
+
+
+class GetWeakTopicsInput(BaseModel):
+    limit: int = Field(default=5, ge=1, le=20, description="Сколько слов вернуть (по умолчанию 5).")
+
+
+class GetTopicProgressInput(BaseModel):
+    topic: str = Field(description="Название грамматической темы, например 'Present Perfect'.")
+
+
+class GetRecentLearningHistoryInput(BaseModel):
+    days: int = Field(default=7, ge=1, le=90, description="За сколько последних дней вернуть историю (по умолчанию 7).")
 
 
 # ========== HELPERS ==========
@@ -488,6 +501,81 @@ async def get_vocabulary_tool(
     return "\n".join(f"{i + 1}. {w}" for i, w in enumerate(words))
 
 
+@tool("get_weak_topics", args_schema=GetWeakTopicsInput)
+async def get_weak_topics_tool(
+    runtime: ToolRuntime[TutorRuntimeContext],
+    limit: int = 5,
+) -> str:
+    """Получить слова, в которых студент слабее всего (самый низкий уровень освоения), от слабых к сильным. Вызывай когда студент или репетитор спрашивает про слабые места, что подтянуть, над чем поработать."""
+    ctx = runtime.context
+    weak = await storage.topic_mastery.get_weak(ctx.project_id, limit=limit)
+
+    llm_logger.info(f"tool.get_weak_topics project_id={ctx.project_id} count={len(weak)}")
+
+    if not weak:
+        return "Недостаточно данных о слабых словах — нужно накопить больше попыток в тренировке."
+
+    lines = []
+    for rec in weak:
+        word = rec["topic"].removeprefix("word:")
+        pct = round(rec["als_score"] * 100)
+        lines.append(f"- {word}: {pct}% освоения ({rec['total_attempts']} попыток)")
+    return "Слабые слова (от самых слабых):\n" + "\n".join(lines)
+
+
+@tool("get_topic_progress", args_schema=GetTopicProgressInput)
+async def get_topic_progress_tool(
+    topic: str,
+    runtime: ToolRuntime[TutorRuntimeContext],
+) -> str:
+    """Получить прогресс студента по конкретной грамматической теме: число попыток, точность, уровень освоения. Вызывай когда студент спрашивает что-то вроде «как у меня дела с Present Perfect» про конкретную тему."""
+    ctx = runtime.context
+    record = await storage.topic_mastery.get_by_topic(ctx.project_id, topic)
+
+    llm_logger.info(f"tool.get_topic_progress project_id={ctx.project_id} topic={topic!r} found={record is not None}")
+
+    if not record:
+        return f"По теме «{topic}» пока нет данных — студент ещё не практиковался."
+
+    accuracy_pct = round(record["accuracy"] * 100)
+    mastery_pct = round(record["mastery_score"] * 100)
+    status = "освоена" if record["bkt"]["is_mastered"] else "в процессе освоения"
+    return (f"Тема «{topic}»: {record['total_attempts']} попыток, точность {accuracy_pct}%, "
+            f"уровень освоения {mastery_pct}% ({status}).")
+
+
+@tool("get_recent_learning_history", args_schema=GetRecentLearningHistoryInput)
+async def get_recent_learning_history_tool(
+    runtime: ToolRuntime[TutorRuntimeContext],
+    days: int = 7,
+) -> str:
+    """Получить, что студент изучал/повторял за последние N дней — слова и темы из истории ответов. Вызывай когда студент спрашивает что-то вроде «что я учил на прошлой неделе»."""
+    ctx = runtime.context
+    # LearningEvent.created_at is stored naive-UTC (see grpc_svc/events.py) —
+    # match that convention here, not an aware datetime, or the comparison
+    # in get_since would silently exclude everything.
+    since = datetime.now(tz=timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    events = await storage.learning_events.get_since(ctx.project_id, since)
+
+    llm_logger.info(f"tool.get_recent_learning_history project_id={ctx.project_id} days={days} count={len(events)}")
+
+    if not events:
+        return f"За последние {days} дн. активности не найдено."
+
+    topic_stats: dict[str, dict] = {}
+    for e in events:
+        stat = topic_stats.setdefault(e["topic"], {"attempts": 0, "correct": 0})
+        stat["attempts"] += 1
+        if e["correct"]:
+            stat["correct"] += 1
+
+    lines = [f"За последние {days} дн. — {len(events)} попыток по {len(topic_stats)} темам/словам:"]
+    for topic, stat in sorted(topic_stats.items(), key=lambda kv: -kv[1]["attempts"])[:20]:
+        name = topic.removeprefix("word:")
+        lines.append(f"- {name}: {stat['attempts']} попыток, {stat['correct']}/{stat['attempts']} верно")
+    return "\n".join(lines)
+
+
 @tool("list_materials", args_schema=ListMaterialsInput)
 async def list_materials_tool(
     runtime: ToolRuntime[TutorRuntimeContext],
@@ -618,6 +706,9 @@ TOOLS = [
     get_material_by_id_tool,
     save_material_tool,
     search_materials_tool,
+    get_weak_topics_tool,
+    get_topic_progress_tool,
+    get_recent_learning_history_tool,
 ]
 if settings.STOCK_PHOTO_ENABLED:
     TOOLS.append(search_stock_photos_tool)
