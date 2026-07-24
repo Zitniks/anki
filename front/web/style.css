@@ -429,6 +429,12 @@ button:disabled {
     color: var(--error);
 }
 
+.profile-guest-hint {
+    margin: -0.25rem 0 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #888);
+}
+
 /* ============================================================
    Profile modal
    ============================================================ */

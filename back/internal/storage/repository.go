@@ -734,12 +734,26 @@ func (r *Repository) SetUserLevel(ctx context.Context, userID int64, level strin
 	return nil
 }
 
-func (r *Repository) UpdateUserProfile(ctx context.Context, userID int64, name, email string) error {
-	tag, err := r.pool.Exec(ctx, `UPDATE users SET name = $1, email = $2 WHERE id = $3`, name, email, userID)
+// UpdateUserProfile updates name/email, and optionally the password hash. A
+// non-empty passwordHash also clears is_guest — setting a real password is
+// what turns a throwaway guest account into one the user can log back into
+// deliberately (via /auth/login) instead of only via the guest device cookie.
+func (r *Repository) UpdateUserProfile(ctx context.Context, userID int64, name, email, passwordHash string) error {
+	var err error
+	var rowsAffected int64
+	if passwordHash != "" {
+		tag, execErr := r.pool.Exec(ctx, `UPDATE users SET name = $1, email = $2, password_hash = $3, is_guest = false WHERE id = $4`, name, email, passwordHash, userID)
+		err = execErr
+		rowsAffected = tag.RowsAffected()
+	} else {
+		tag, execErr := r.pool.Exec(ctx, `UPDATE users SET name = $1, email = $2 WHERE id = $3`, name, email, userID)
+		err = execErr
+		rowsAffected = tag.RowsAffected()
+	}
 	if err != nil {
 		return err
 	}
-	if tag.RowsAffected() == 0 {
+	if rowsAffected == 0 {
 		return ErrNotFound
 	}
 	return nil

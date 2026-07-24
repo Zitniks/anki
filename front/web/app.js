@@ -7,6 +7,8 @@ const READING_PROGRESS_KEY = "anki_reading_progress";
 const READING_LAST_BOOK_KEY = "anki_reading_last_book";
 const READING_CHARS_PER_PAGE = 1500;
 const THEME_KEY = "anki_theme";
+const CHAT_HISTORY_KEY = "anki_chat_history";
+const CHAT_HISTORY_MAX = 100;
 
 // Library of available books — add another entry (with its own generated JSON,
 // see scripts/gen_book_json.py) to grow this beyond one title.
@@ -80,7 +82,7 @@ const state = {
   trainingStarted: false,
   trainingCompleted: false,
   autoPlayAudio: localStorage.getItem(AUTOPLAY_KEY) !== "false",
-  chatMessages: [],
+  chatMessages: loadChatHistory(),
   chatStreaming: false,
   aiReady: false,
   theoryData: null,
@@ -145,12 +147,20 @@ $("profile-form").addEventListener("submit", async (e) => {
   const submitBtn = $("profile-form").querySelector("button[type=submit]");
   const name = $("profile-name").value.trim();
   const email = $("profile-email-input").value.trim();
+  const password = $("profile-password-input").value;
+  if (password && password.length < 8) {
+    status.textContent = "Пароль должен быть не короче 8 символов";
+    status.classList.add("is-error");
+    return;
+  }
   submitBtn.disabled = true;
   status.textContent = "";
   status.classList.remove("is-error");
+  const body = { name, email };
+  if (password) body.password = password;
   const res = await apiFetch(`/auth/me`, {
     method: "PATCH",
-    body: JSON.stringify({ name, email }),
+    body: JSON.stringify(body),
   });
   submitBtn.disabled = false;
   if (!res.ok) {
@@ -158,8 +168,10 @@ $("profile-form").addEventListener("submit", async (e) => {
     status.classList.add("is-error");
     return;
   }
-  status.textContent = "Сохранено ✓";
-  state.user = { ...(state.user || {}), name, email };
+  status.textContent = password ? "Сохранено, пароль обновлён ✓" : "Сохранено ✓";
+  $("profile-password-input").value = "";
+  state.user = { ...(state.user || {}), name, email, is_guest: password ? false : state.user?.is_guest };
+  $("profile-guest-hint").classList.toggle("hidden", !state.user?.is_guest);
 });
 
 $("go-train").addEventListener("click", () => switchScreen("training"));
@@ -1847,6 +1859,8 @@ async function enterAfterAuth() {
 function openProfileModal() {
   $("profile-name").value = state.user?.name || "";
   $("profile-email-input").value = state.user?.email || "";
+  $("profile-password-input").value = "";
+  $("profile-guest-hint").classList.toggle("hidden", !state.user?.is_guest);
   $("profile-save-status").textContent = "";
   $("profile-save-status").classList.remove("is-error");
   $("profile-modal").classList.remove("hidden");
@@ -1929,9 +1943,33 @@ async function loadAIStatus() {
 // whatever's currently arriving, so the reader never sees where it began).
 // Default (neither flag): scroll to bottom, e.g. opening the widget or a
 // non-streamed message landing — same behavior as before this change.
+// Chat history is otherwise only in-memory JS state, so a page reload wiped
+// it from view even though the backend keeps the real conversation forever
+// (used to rebuild the AI's own context on the next turn) — this just keeps
+// the UI in sync with what the user last saw, capped so localStorage doesn't
+// grow unbounded across a long-lived session.
+function loadChatHistory() {
+  try {
+    const raw = localStorage.getItem(CHAT_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (_err) {
+    return [];
+  }
+}
+
+function saveChatHistory() {
+  try {
+    const trimmed = state.chatMessages.slice(-CHAT_HISTORY_MAX);
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(trimmed));
+  } catch (_err) {
+    // localStorage full/unavailable — chat still works, just won't survive reload
+  }
+}
+
 function renderChatMessages(opts = {}) {
   const box = $("chat-messages");
   if (!box) return;
+  saveChatHistory();
   const prevScrollTop = box.scrollTop;
   box.innerHTML = "";
   let lastRow = null;

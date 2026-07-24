@@ -48,7 +48,7 @@ type Repository interface {
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	GetUserByID(ctx context.Context, id int64) (*model.User, error)
 	SetUserLevel(ctx context.Context, userID int64, level string) error
-	UpdateUserProfile(ctx context.Context, userID int64, name, email string) error
+	UpdateUserProfile(ctx context.Context, userID int64, name, email, passwordHash string) error
 	MarkTopicCompleted(ctx context.Context, userID int64, topicID string) error
 	GetCompletedTopicIDs(ctx context.Context, userID int64) ([]string, error)
 }
@@ -177,13 +177,24 @@ func (s *WordService) SetUserLevel(ctx context.Context, userID int64, level stri
 	return err
 }
 
-func (s *WordService) UpdateUserProfile(ctx context.Context, userID int64, name, email string) error {
+func (s *WordService) UpdateUserProfile(ctx context.Context, userID int64, name, email, password string) error {
 	name = strings.TrimSpace(name)
 	email = strings.TrimSpace(strings.ToLower(email))
 	if email == "" || len(name) > 80 {
 		return ErrInvalidInput
 	}
-	err := s.repo.UpdateUserProfile(ctx, userID, name, email)
+	var hash string
+	if password != "" {
+		if len(password) < 8 {
+			return ErrInvalidInput
+		}
+		var err error
+		hash, err = auth.HashPassword(password)
+		if err != nil {
+			return err
+		}
+	}
+	err := s.repo.UpdateUserProfile(ctx, userID, name, email, hash)
 	if errors.Is(err, storage.ErrNotFound) {
 		return ErrNotFound
 	}

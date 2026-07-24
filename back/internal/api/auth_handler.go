@@ -131,10 +131,17 @@ func (h *Handler) Me(c *gin.Context) {
 }
 
 type updateProfileRequest struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
+// UpdateProfile saves name/email and, when Password is non-empty, sets a real
+// password on the account. Setting a password also clears is_guest server-side
+// (see Repository.UpdateUserProfile) — this is how a guest turns their
+// throwaway account into one they can deliberately log back into later via
+// /auth/login, since the earlier fully-automatic guest bootstrap left no
+// other path to a non-guest login.
 func (h *Handler) UpdateProfile(c *gin.Context) {
 	userID := auth.UserIDFromContext(c)
 	var req updateProfileRequest
@@ -142,10 +149,10 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
-	if err := h.service.UpdateUserProfile(c.Request.Context(), userID, req.Name, req.Email); err != nil {
+	if err := h.service.UpdateUserProfile(c.Request.Context(), userID, req.Name, req.Email, req.Password); err != nil {
 		switch {
 		case errors.Is(err, service.ErrInvalidInput):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "email is required, name must be at most 80 characters"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "email is required, name must be at most 80 characters, password must be at least 8 characters"})
 		case errors.Is(err, service.ErrConflict):
 			c.JSON(http.StatusConflict, gin.H{"error": "email already in use"})
 		case errors.Is(err, service.ErrNotFound):
