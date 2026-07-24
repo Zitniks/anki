@@ -1951,7 +1951,13 @@ async function loadAIStatus() {
 function loadChatHistory() {
   try {
     const raw = localStorage.getItem(CHAT_HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const messages = raw ? JSON.parse(raw) : [];
+    // A reload mid-stream can persist a message still marked `pending` (its
+    // stream is gone, nothing will ever clear the flag) — without this it'd
+    // show frozen "thinking" dots forever instead of the message it actually was.
+    return messages.map((msg) => (
+      msg.pending ? { ...msg, pending: false, statusText: null, text: msg.text || "(прервано перезагрузкой страницы)" } : msg
+    ));
   } catch (_err) {
     return [];
   }
@@ -1966,6 +1972,22 @@ function saveChatHistory() {
   }
 }
 
+function buildThinkingEl(statusText) {
+  const wrap = document.createElement("div");
+  wrap.className = "chat-thinking";
+  if (statusText) {
+    const label = document.createElement("span");
+    label.className = "chat-thinking-label";
+    label.textContent = statusText;
+    wrap.appendChild(label);
+  }
+  const dots = document.createElement("span");
+  dots.className = "chat-thinking-dots";
+  dots.innerHTML = "<span></span><span></span><span></span>";
+  wrap.appendChild(dots);
+  return wrap;
+}
+
 function renderChatMessages(opts = {}) {
   const box = $("chat-messages");
   if (!box) return;
@@ -1978,7 +2000,9 @@ function renderChatMessages(opts = {}) {
     row.className = `chat-row chat-row-${msg.role}`;
     const bubble = document.createElement("div");
     bubble.className = msg.quiz || msg.html ? "chat-bubble chat-bubble-quiz" : "chat-bubble";
-    if (msg.text) {
+    if (msg.pending) {
+      bubble.appendChild(buildThinkingEl(msg.statusText));
+    } else if (msg.text) {
       const textEl = document.createElement("div");
       textEl.textContent = msg.text;
       bubble.appendChild(textEl);
@@ -2079,7 +2103,11 @@ async function onChatSubmit(e) {
 
   state.chatStreaming = true;
   $("chat-send").disabled = true;
-  state.chatMessages.push({ role: "assistant", text: "" });
+  // `pending` drives the "thinking" animation in renderChatMessages — it's
+  // cleared the moment the first real content chunk arrives, so the dots
+  // cover exactly the model-latency gap (classify + route + TTFT) that a
+  // user would otherwise stare at an empty bubble for.
+  state.chatMessages.push({ role: "assistant", text: "", pending: true });
   renderChatMessages({ scrollToLastMessageTop: true });
 
   const assistantIndex = state.chatMessages.length - 1;
@@ -2106,11 +2134,17 @@ async function onChatSubmit(e) {
         try {
           const event = JSON.parse(line.slice(6));
           if (event.type === "content" && event.content) {
+            state.chatMessages[assistantIndex].pending = false;
+            state.chatMessages[assistantIndex].statusText = null;
             state.chatMessages[assistantIndex].text += event.content;
             renderChatMessages({ preserveScroll: true });
           }
           if (event.type === "status" && event.status) {
-            $("chat-status").textContent = event.status;
+            // Shown inside the thinking bubble itself (e.g. "Ищу материалы...")
+            // rather than the old #chat-status bar, which stays hidden after
+            // the initial connection check and so never surfaced this text.
+            state.chatMessages[assistantIndex].statusText = event.status;
+            renderChatMessages({ preserveScroll: true });
           }
           if (event.type === "error" && event.error) {
             throw new Error(event.error);
@@ -2123,10 +2157,12 @@ async function onChatSubmit(e) {
       }
     }
     if (!state.chatMessages[assistantIndex].text) {
+      state.chatMessages[assistantIndex].pending = false;
       state.chatMessages[assistantIndex].text = "(пустой ответ)";
       renderChatMessages({ preserveScroll: true });
     }
   } catch (err) {
+    state.chatMessages[assistantIndex].pending = false;
     state.chatMessages[assistantIndex].text = `Ошибка: ${err?.message || "не удалось получить ответ"}`;
     renderChatMessages({ preserveScroll: true });
     showError(err?.message || "Ошибка чата");
