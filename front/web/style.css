@@ -159,7 +159,11 @@ body {
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
+    /* dvh accounts for Safari's collapsing address bar; vh alone leaves a
+       gap/jump as it shows/hides. Keep the vh line first as a fallback for
+       browsers without dvh support. */
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 ::selection {
@@ -1625,7 +1629,9 @@ tbody tr:hover {
 .chat-launcher,
 .tips-launcher {
     position: fixed;
-    bottom: 1.5rem;
+    /* env(safe-area-inset-*) clears the iOS home-indicator/notch — resolves to
+       0 on devices without one, so this is a no-op there. */
+    bottom: calc(1.5rem + env(safe-area-inset-bottom));
     z-index: 50;
     width: 56px;
     height: 56px;
@@ -1643,17 +1649,17 @@ tbody tr:hover {
 }
 
 .chat-launcher {
-    right: 1.5rem;
+    right: calc(1.5rem + env(safe-area-inset-right));
 }
 
 .tips-launcher {
-    right: 5.75rem;
+    right: calc(5.75rem + env(safe-area-inset-right));
 }
 
 .tips-widget {
     position: fixed;
-    right: 1.5rem;
-    bottom: calc(1.5rem + 68px);
+    right: calc(1.5rem + env(safe-area-inset-right));
+    bottom: calc(1.5rem + 68px + env(safe-area-inset-bottom));
     z-index: 50;
     width: min(340px, calc(100vw - 3rem));
     background: var(--glass-bg-strong);
@@ -1694,11 +1700,12 @@ tbody tr:hover {
 
 .chat-widget {
     position: fixed;
-    right: 1.5rem;
-    bottom: calc(1.5rem + 68px);
+    right: calc(1.5rem + env(safe-area-inset-right));
+    bottom: calc(1.5rem + 68px + env(safe-area-inset-bottom));
     z-index: 50;
     width: min(380px, calc(100vw - 3rem));
     max-height: 70vh;
+    max-height: 70dvh;
     display: flex;
     flex-direction: column;
     background: var(--glass-bg-strong);
@@ -1747,6 +1754,7 @@ body.auth-flow .tips-widget {
 body.auth-flow .app {
     max-width: 460px;
     min-height: 100vh;
+    min-height: 100dvh;
     margin: 0 auto;
     padding: 1.5rem;
     display: flex;
@@ -2194,6 +2202,52 @@ body.auth-flow .answer {
     header {
         top: 0.5rem;
         border-radius: var(--radius-md);
+    }
+
+    /* .tabs wrapping to 2-3 rows ate over half the viewport height on phones
+       (7 tabs don't fit one row at any readable font size below ~700px) —
+       scroll horizontally instead, same pattern as .table-scroll. */
+    .tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 0.35rem 1.1rem;
+    }
+
+    .tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .tab {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        /* padding alone (not fixed height) so the underline/active state
+           sizing is untouched — just taller for a thumb instead of a cursor */
+        padding: 0.6rem 0.05rem 0.75rem;
+    }
+
+    /* 38px circular buttons are just under Apple's 44pt touch-target
+       guidance; bump on touch-sized viewports without changing desktop. */
+    .theme-toggle,
+    .profile-toggle {
+        width: 44px;
+        height: 44px;
+    }
+
+    /* Generic buttons (delete, save, mode-tabs, etc.) computed ~31-37px tall
+       with their desktop padding — below the 44pt touch-target guidance.
+       More specific rules (icon-circle buttons above, chat-send, etc.) still
+       win via selector specificity, so this only affects plain buttons. */
+    button {
+        padding: 0.75rem 1.1rem;
+        min-height: 44px;
+    }
+
+    /* Give the fixed chat/tips launchers (bottom-right) more clearance so a
+       screen's last card isn't sitting directly under them on initial load. */
+    .app {
+        padding-bottom: 6rem;
     }
 
     .word {
