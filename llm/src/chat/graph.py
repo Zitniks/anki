@@ -9,7 +9,8 @@ from dataclasses import asdict
 from typing import Literal
 
 from langchain_core.documents import Document
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langgraph.config import get_stream_writer
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
@@ -20,7 +21,7 @@ from analytics.retrievers import ExampleRetriever, ExerciseRetriever, Explanatio
 from chat.intent import classify_intent
 from chat.persistence import convert_to_langchain_messages
 from chat.prompts import SYSTEM_PROMPTS
-from chat.rag_router import resolve_route
+from chat.rag_router import REFUSAL_MESSAGE, resolve_route
 from chat.state import TutorRuntimeContext, TutorState
 from chat.tools import TOOLS
 from database import async_session_factory
@@ -105,6 +106,27 @@ async def _classify(state: TutorState, runtime: Runtime[TutorRuntimeContext]) ->
     return {"route_decision": asdict(route)}
 
 
+async def _refuse(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
+    """Return the canned off-topic refusal without invoking the LLM or any RAG retriever.
+
+    Emits the text via a custom stream event (picked up by
+    ``chat.streaming.normalize_agent_events``) instead of an LLM call, since no
+    ``on_chat_model_stream``/``on_chat_model_end`` event would otherwise fire
+    for this turn.
+    """
+    route_data = state.get("route_decision") or {}
+    message = route_data.get("message") or REFUSAL_MESSAGE
+    get_stream_writer()({"type": "refusal", "content": message})
+    return {"messages": [AIMessage(content=message)]}
+
+
+def _route_or_refuse(state: TutorState) -> Literal["route", "refuse"]:
+    route_data = state.get("route_decision")
+    if route_data and route_data.get("mode") == "refuse":
+        return "refuse"
+    return "route"
+
+
 def _reciprocal_rank_fusion(result_sets: list[list[Document]], k: int = 60) -> list[Document]:
     """Merge multiple ranked ``Document`` lists into one, highest combined rank first."""
     scores: dict[str, float] = {}
@@ -173,12 +195,14 @@ def build_tutor_graph() -> CompiledStateGraph:
     builder.add_node("prepare", _prepare_messages)
     builder.add_node("classify", _classify)
     builder.add_node("route", _route)
+    builder.add_node("refuse", _refuse)
     builder.add_node("model", _call_model)
     builder.add_node("tools", _tool_node)
     builder.add_edge(START, "prepare")
     builder.add_edge("prepare", "classify")
-    builder.add_edge("classify", "route")
+    builder.add_conditional_edges("classify", _route_or_refuse)
     builder.add_edge("route", "model")
+    builder.add_edge("refuse", END)
     builder.add_conditional_edges("model", _should_continue)
     builder.add_edge("tools", "model")
     return builder.compile()

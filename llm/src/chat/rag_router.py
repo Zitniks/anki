@@ -20,21 +20,29 @@ _ENGINE_FORCED_INTENT: dict[str, str] = {
 
 _CONFIDENCE_THRESHOLD = 0.5
 
+REFUSAL_MESSAGE = ("Я помогаю только с изучением английского языка — грамматикой, лексикой и практикой. "
+                   "Задайте, пожалуйста, вопрос по английскому.")
+
 RetrieverName = Literal["exercise", "explanation", "example"]
 
 
 @dataclass
 class RouteDecision:
-    mode: Literal["single", "ensemble", "none"]
+    mode: Literal["single", "ensemble", "none", "refuse"]
     retrievers: list[RetrieverName] = field(default_factory=list)
     topic: str | None = None
     reason: str = ""
+    message: str | None = None
 
 
 def resolve_route(engine_decision: AdaptiveDecision, intent: Intent) -> RouteDecision:
     """Decide which RAG retriever(s), if any, to query this turn.
 
     Priority:
+    0. `off_topic` intent -> refuse. Checked first and unconditionally: an
+       off-topic or prompt-injection message is refused even if the Adaptive
+       Engine would otherwise force a RAG lookup. Neither the LLM nor any
+       retriever is invoked for this turn.
     1. Adaptive Engine forced override (`_ENGINE_FORCED_INTENT`) — a
        pedagogical decision wins regardless of message wording.
     2. `chat` intent -> no RAG.
@@ -52,6 +60,9 @@ def resolve_route(engine_decision: AdaptiveDecision, intent: Intent) -> RouteDec
     -------
     RouteDecision
     """
+    if intent.intent == "off_topic":
+        return RouteDecision(mode="refuse", reason="intent=off_topic", message=REFUSAL_MESSAGE)
+
     forced = _ENGINE_FORCED_INTENT.get(engine_decision.action)
     if forced:
         return RouteDecision(

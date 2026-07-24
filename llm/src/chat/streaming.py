@@ -128,10 +128,19 @@ async def normalize_agent_events(
                 config=config,
                 context=runtime_context,
                 version="v2",
+                stream_mode="custom",
         ):
             kind = event["event"]
 
-            if kind == "on_chat_model_stream":
+            if kind == "on_chain_stream" and event.get("name") == "LangGraph":
+                chunk = event["data"].get("chunk")
+                if isinstance(chunk, dict) and chunk.get("type") == "refusal":
+                    content = chunk.get("content", "")
+                    if content:
+                        full_response += content
+                        yield ContentEvent(content=content), None
+
+            elif kind == "on_chat_model_stream":
                 chunk = event["data"]["chunk"]
                 reasoning = chunk.additional_kwargs.get("reasoning_content")
                 if reasoning:
