@@ -50,14 +50,26 @@ _tool_node = ToolNode(TOOLS + SEARCH_TOOLS, handle_tool_errors=_TOOL_ERROR_MESSA
 _llm_plain = settings.llm
 
 
-def _prepare_messages(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
-    """Build the full message list for this turn: system prompt + history + current user message."""
+async def _prepare_messages(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
+    """Build the full message list for this turn: system prompt + history + current user message.
+
+    Also fires the Adaptive Engine's pedagogical decision purely for
+    observability/logging (`engine_action`) — moved here from `_classify`
+    (Этап 2 of the classify-removal task) since it's a pure function plus one
+    DB read, no LLM call, and no bearing on this turn's routing (that
+    mechanism was already removed earlier — see chat/rag_router.py). Keeping
+    the log line here decouples it from `classify`, which Этап 4 removes.
+    """
     ctx = runtime.context
     cfg = SYSTEM_PROMPTS.get(ctx.system_prompt_key, SYSTEM_PROMPTS["default"])
     system_text = cfg.build(ctx)
 
     history_msgs = convert_to_langchain_messages(ctx.history)
     user_msg = [ctx.current_user_message] if ctx.current_user_message is not None else []
+
+    mastery_records = await storage.topic_mastery.get_by_project(ctx.project_id)
+    engine_decision = adaptive_decide(mastery_records)
+    llm_logger.info(f"chat.adaptive_engine project_id={ctx.project_id} engine_action={engine_decision.action}")
 
     return {
         "messages": [SystemMessage(content=system_text), *history_msgs, *user_msg],
@@ -78,12 +90,9 @@ def _extract_text(message: HumanMessage) -> str:
 async def _classify(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
     """Off-topic gate + intent hint for the agent.
 
-    Still computes the Adaptive Engine's pedagogical decision purely for
-    observability/logging — it used to also force a specific RAG corpus for
-    the now-removed deterministic router; that mechanism is gone, but the
-    decision itself is still worth logging (see IMPROVEMENTS_SPEC.md Epic 7).
-    Off-topic refusal was always intent-only (never influenced by the engine
-    decision), so removing that mechanism doesn't change refusal behavior.
+    `adaptive_decide`/`engine_action` logging used to live here too — moved
+    to `_prepare_messages` (Этап 2) since it has nothing to do with intent
+    classification or the LLM call this node makes.
     """
     ctx = runtime.context
     if ctx.current_user_message is None:
@@ -94,14 +103,11 @@ async def _classify(state: TutorState, runtime: Runtime[TutorRuntimeContext]) ->
         return {"route_decision": None}
 
     intent = await classify_intent(query)
-    mastery_records = await storage.topic_mastery.get_by_project(ctx.project_id)
-    engine_decision = adaptive_decide(mastery_records)
     refusal = resolve_route(intent)
 
     llm_logger.info(
         f"chat.classify project_id={ctx.project_id} intent={intent.intent} "
-        f"confidence={intent.confidence:.2f} engine_action={engine_decision.action} "
-        f"refuse={refusal is not None}")
+        f"confidence={intent.confidence:.2f} refuse={refusal is not None}")
 
     hint = AGENTIC_INTENT_HINT_TEMPLATE.format(intent=intent.intent, confidence=intent.confidence)
     return {
