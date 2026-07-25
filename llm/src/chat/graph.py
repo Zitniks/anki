@@ -9,15 +9,20 @@ The router-based predecessor (a fixed classify->route->model loop with
 ``chat/rag_router.py::resolve_route`` choosing which corpus to pre-fetch)
 was removed once this branch was proven out (see git history and
 scripts/eval_agentic_rag.py for the router-vs-agentic comparison it replaced).
+
+No ``classify`` node either — off-topic refusal moved entirely into the
+agent's own system prompt + the ``decline_off_topic`` tool below (see git
+history for the classify-removal task). ``chat.intent.classify_intent`` is
+kept importable but unused (deliberately not deleted, for an easy revert if
+prompt-only refusal quality regresses — see scripts/eval_agentic_rag.py's
+off-topic accuracy measurement).
 """
 
 import time
-from dataclasses import asdict
 from typing import Literal
 
 from langchain.tools import ToolRuntime, tool
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
-from langgraph.config import get_stream_writer
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
@@ -25,10 +30,8 @@ from langgraph.runtime import Runtime
 from pydantic import BaseModel, Field
 
 from adaptive.engine import decide as adaptive_decide
-from chat.intent import classify_intent
 from chat.persistence import convert_to_langchain_messages
-from chat.prompts import AGENTIC_INTENT_HINT_TEMPLATE, SYSTEM_PROMPTS
-from chat.rag_router import REFUSAL_MESSAGE, resolve_route
+from chat.prompts import SYSTEM_PROMPTS
 from chat.search_tools import SEARCH_TOOLS, _SEARCH_TOOL_CORPUS, _SEARCH_TOOL_NAMES, run_search_all
 from chat.state import TutorRuntimeContext, TutorState
 from chat.tools import TOOLS
@@ -83,11 +86,11 @@ async def _prepare_messages(state: TutorState, runtime: Runtime[TutorRuntimeCont
     """Build the full message list for this turn: system prompt + history + current user message.
 
     Also fires the Adaptive Engine's pedagogical decision purely for
-    observability/logging (`engine_action`) — moved here from `_classify`
-    (Этап 2 of the classify-removal task) since it's a pure function plus one
-    DB read, no LLM call, and no bearing on this turn's routing (that
-    mechanism was already removed earlier — see chat/rag_router.py). Keeping
-    the log line here decouples it from `classify`, which Этап 4 removes.
+    observability/logging (`engine_action`) — a pure function plus one DB
+    read, no LLM call, no bearing on this turn's routing (see
+    chat/rag_router.py; that mechanism was removed earlier). And stamps the
+    timeout budget once per turn — this is the first node to run, same as
+    when `classify` owned this before it was removed.
     """
     ctx = runtime.context
     cfg = SYSTEM_PROMPTS.get(ctx.system_prompt_key, SYSTEM_PROMPTS["default"])
@@ -103,6 +106,7 @@ async def _prepare_messages(state: TutorState, runtime: Runtime[TutorRuntimeCont
     return {
         "messages": [SystemMessage(content=system_text), *history_msgs, *user_msg],
         "images": [],
+        "agentic_deadline": time.monotonic() + settings.AGENTIC_RAG_TIMEOUT_SECONDS,
     }
 
 
@@ -114,61 +118,6 @@ def _extract_text(message: HumanMessage) -> str:
         if isinstance(block, dict) and block.get("type") == "text":
             return block.get("text", "")
     return ""
-
-
-async def _classify(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
-    """Off-topic gate + intent hint for the agent.
-
-    `adaptive_decide`/`engine_action` logging used to live here too — moved
-    to `_prepare_messages` (Этап 2) since it has nothing to do with intent
-    classification or the LLM call this node makes.
-    """
-    ctx = runtime.context
-    if ctx.current_user_message is None:
-        return {"route_decision": None}
-
-    query = _extract_text(ctx.current_user_message)
-    if not query:
-        return {"route_decision": None}
-
-    intent = await classify_intent(query)
-    refusal = resolve_route(intent)
-
-    llm_logger.info(
-        f"chat.classify project_id={ctx.project_id} intent={intent.intent} "
-        f"confidence={intent.confidence:.2f} refuse={refusal is not None}")
-
-    hint = AGENTIC_INTENT_HINT_TEMPLATE.format(intent=intent.intent, confidence=intent.confidence)
-    return {
-        "route_decision": {"refuse": refusal is not None, "message": refusal,
-                            "intent": intent.intent, "confidence": intent.confidence},
-        "messages": [SystemMessage(content=hint)],
-        # Этап 4 timeout budget: stamped once here (classify runs exactly once
-        # per turn, before the agent<->search_tools loop), checked by
-        # `_agentic_should_continue` on every iteration of that loop.
-        "agentic_deadline": time.monotonic() + settings.AGENTIC_RAG_TIMEOUT_SECONDS,
-    }
-
-
-async def _refuse(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
-    """Return the canned off-topic refusal without invoking the LLM or any search tool.
-
-    Emits the text via a custom stream event (picked up by
-    ``chat.streaming.normalize_agent_events``) instead of an LLM call, since no
-    ``on_chat_model_stream``/``on_chat_model_end`` event would otherwise fire
-    for this turn.
-    """
-    route_data = state.get("route_decision") or {}
-    message = route_data.get("message") or REFUSAL_MESSAGE
-    get_stream_writer()({"type": "refusal", "content": message})
-    return {"messages": [AIMessage(content=message)]}
-
-
-def _classify_or_refuse(state: TutorState) -> Literal["agent", "refuse"]:
-    route_data = state.get("route_decision")
-    if route_data and route_data.get("refuse"):
-        return "refuse"
-    return "agent"
 
 
 async def _call_model(state: TutorState, runtime: Runtime[TutorRuntimeContext]) -> dict:
@@ -349,19 +298,15 @@ async def _finalize(state: TutorState, runtime: Runtime[TutorRuntimeContext]) ->
 
 
 def build_tutor_graph() -> CompiledStateGraph:
-    """Build and compile the tutor LangGraph: prepare -> classify -> agent <-> search_tools -> finalize -> end."""
+    """Build and compile the tutor LangGraph: prepare -> agent <-> search_tools -> finalize -> end."""
     builder = StateGraph(TutorState, context_schema=TutorRuntimeContext)
     builder.add_node("prepare", _prepare_messages)
-    builder.add_node("classify", _classify)
     builder.add_node("agent", _call_model)
     builder.add_node("search_tools", _search_tools_node)
-    builder.add_node("refuse", _refuse)
     builder.add_node("finalize", _finalize)
     builder.add_edge(START, "prepare")
-    builder.add_edge("prepare", "classify")
-    builder.add_conditional_edges("classify", _classify_or_refuse)
+    builder.add_edge("prepare", "agent")
     builder.add_conditional_edges("agent", _should_continue)
     builder.add_edge("search_tools", "agent")
-    builder.add_edge("refuse", END)
     builder.add_edge("finalize", END)
     return builder.compile()

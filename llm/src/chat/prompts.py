@@ -107,14 +107,6 @@ AGENTIC_SEARCH_POLICY = """
 - Если после трёх попыток релевантного материала нет — честно скажи репетитору, что в материалах курса этого нет, и не придумывай ответ.
 """.strip()
 
-# Filled in by chat/graph.py::_classify with the classifier's own intent/
-# confidence for this turn — a hint, not a routing instruction (classify
-# doesn't decide what to search, the agent does). classify runs AFTER prepare
-# (which builds the system prompt), so this can't be baked into
-# AGENTIC_SEARCH_POLICY/build() below — it's injected as a separate
-# SystemMessage once classify has actually run.
-AGENTIC_INTENT_HINT_TEMPLATE = "Вероятное намерение: {intent}, уверенность {confidence:.2f}. Это подсказка, а не указание."
-
 
 def format_vocabulary(vocab: list[str], empty_label: str = "пока нет") -> str:
     """Format vocabulary for LLM context: last N recent + M random from the rest."""

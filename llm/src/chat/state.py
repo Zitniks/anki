@@ -105,19 +105,18 @@ class TutorState(MessagesState):
     """
 
     images: Annotated[list[dict], operator.add]
-    route_decision: dict | None
 
     # Agentic RAG tracking (chat/graph.py, chat/search_tools.py) — absent from
-    # the initial state dict (`{"messages": []}` in chat/streaming.py), same as
-    # `route_decision` already is. TutorState is a TypedDict (via
-    # MessagesState), which has no real default-value mechanism, so these are
-    # read everywhere via `state.get(key, default)`, never assumed present.
+    # the initial state dict (`{"messages": []}` in chat/streaming.py).
+    # TutorState is a TypedDict (via MessagesState), which has no real
+    # default-value mechanism, so these are read everywhere via
+    # `state.get(key, default)`, never assumed present.
     search_calls: int
     retrieved_docs: list[dict]
     corpora_used: set[str]
     # Safety nets: wall-clock deadline (time.monotonic() cutoff, stamped once
-    # by `_classify`) and a one-shot guard so the skip-search forced-retry in
-    # `_finalize` can never fire twice for the same turn.
+    # by `_prepare_messages`) and a one-shot guard so the skip-search
+    # forced-retry in `_finalize` can never fire twice for the same turn.
     agentic_deadline: float | None
     forced_search_done: bool
     # Set by `_search_tools_node` when the agent calls `_decline_off_topic_tool`
