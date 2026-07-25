@@ -120,3 +120,8 @@ class TutorState(MessagesState):
     # `_finalize` can never fire twice for the same turn.
     agentic_deadline: float | None
     forced_search_done: bool
+    # Set by `_search_tools_node` when the agent calls `_decline_off_topic_tool`
+    # — lets `_finalize` tell "the agent refused" apart from "the agent
+    # answered without searching" without needing a classifier confidence
+    # score (see chat/graph.py's classify-removal Этап 3).
+    is_refusal: bool
