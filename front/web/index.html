@@ -91,8 +91,24 @@
                     <div class="label">К повторению</div>
                     <div id="home-due" class="value">0</div>
                 </article>
+                <article class="card">
+                    <div class="label">Серия</div>
+                    <div id="home-streak" class="value">0 🔥</div>
+                </article>
             </div>
             <button id="go-train" class="primary">Начать тренировку</button>
+
+            <div id="home-digest" class="home-digest">
+                <div id="home-digest-topic" class="home-digest-item hidden">
+                    <span class="home-digest-icon">📖</span>
+                    <span class="home-digest-text"></span>
+                </div>
+                <button type="button" id="home-digest-weak" class="home-digest-item home-digest-clickable hidden">
+                    <span class="home-digest-icon">🎯</span>
+                    <span class="home-digest-text"></span>
+                    <span class="home-digest-arrow">→</span>
+                </button>
+            </div>
         </section>
 
         <section id="screen-dictionary" class="screen">
@@ -141,6 +157,13 @@
         </section>
 
         <section id="screen-training" class="screen">
+            <div id="training-mode-picker" class="training-mode-picker">
+                <button id="training-mode-memory" type="button" class="training-mode-btn">📚 Тренировка на запоминание</button>
+                <button id="training-mode-tense" type="button" class="training-mode-btn">🎯 Тренировка на время</button>
+            </div>
+            <div id="training-drill" class="theory-drill hidden">
+                <div id="training-drill-items"></div>
+            </div>
             <div id="train-setup" class="training-card train-setup hidden">
                 <div class="train-setup-label">Слов в раунде</div>
                 <select id="train-count">
@@ -221,10 +244,7 @@
 
         <section id="screen-theory" class="screen">
             <h2>Теория</h2>
-            <div id="theory-categories" class="theory-categories"></div>
-            <div id="theory-topics" class="theory-topics hidden">
-                <button id="theory-back-to-categories" type="button" class="theory-back">← Категории</button>
-                <h3 id="theory-category-title"></h3>
+            <div id="theory-topics" class="theory-topics">
                 <div id="theory-topic-list" class="theory-topic-list"></div>
             </div>
             <div id="theory-detail" class="theory-detail hidden">
@@ -232,6 +252,7 @@
                 <h3 id="theory-topic-title"></h3>
                 <div id="theory-topic-content" class="theory-topic-content"></div>
                 <button id="theory-reinforce" type="button" class="primary theory-reinforce-btn">📌 Закрепить тему</button>
+                <div id="theory-quiz" class="theory-quiz"></div>
             </div>
         </section>
 
@@ -285,6 +306,11 @@
     <h2>Чат с репетитором</h2>
     <p id="chat-status" class="chat-status">Проверка подключения к AI...</p>
     <div id="chat-messages" class="chat-messages"></div>
+    <div id="chat-suggestions" class="chat-suggestions">
+        <button type="button" class="chat-suggestion" data-fill="Добавить слово ... в словарь">Добавить слово ... (на английском)</button>
+        <button type="button" class="chat-suggestion" data-fill="Составь квиз по словам на повторение">Составить квиз</button>
+        <button type="button" id="chat-suggestion-topic" class="chat-suggestion hidden"></button>
+    </div>
     <form id="chat-form" class="chat-form">
         <textarea id="chat-input" rows="2" placeholder="Спросите про слово, грамматику или попросите упражнение..."></textarea>
         <button type="submit" id="chat-send" class="chat-send" aria-label="Отправить">

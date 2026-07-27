@@ -87,7 +87,6 @@ const state = {
   aiReady: false,
   theoryData: null,
   theoryLoaded: false,
-  theoryCurrentCategory: null,
   theoryCurrentTopic: null,
   readingBooksCache: {},
   readingCurrentBookId: null,
@@ -196,16 +195,25 @@ $("autoplay-audio").addEventListener("change", (e) => {
   localStorage.setItem(AUTOPLAY_KEY, String(state.autoPlayAudio));
 });
 
-$("theory-back-to-categories").addEventListener("click", renderTheoryCategories);
 $("theory-back-to-topics").addEventListener("click", () => {
-  if (state.theoryCurrentCategory) {
-    renderTheoryTopicList(state.theoryCurrentCategory);
-  }
+  renderTheoryTopicList(state.theoryData.categories.flatMap((c) => c.topics));
 });
 $("theory-reinforce").addEventListener("click", () => {
   if (state.theoryCurrentTopic) {
     reinforceTheoryTopic(state.theoryCurrentTopic);
   }
+});
+$("training-mode-memory").addEventListener("click", () => {
+  enterTrainingMode();
+  if (!state.trainingStarted || state.trainingCompleted) {
+    showTrainingSetup();
+  } else {
+    renderRound();
+  }
+});
+$("training-mode-tense").addEventListener("click", () => {
+  enterTrainingMode();
+  startTenseDrill();
 });
 
 $("reading-back-to-library").addEventListener("click", showReadingLibrary);
@@ -221,16 +229,37 @@ $("topic-select-none").addEventListener("click", clearTopicWordSelection);
 $("topic-add-selected").addEventListener("click", addSelectedTopicWords);
 
 $("chat-launcher").addEventListener("click", () => {
-  const opening = $("chat-widget").classList.contains("hidden");
-  $("chat-widget").classList.toggle("hidden");
-  if (opening) {
-    loadAIStatus();
-    renderChatMessages();
-    autoResizeChatInput();
+  if ($("chat-widget").classList.contains("hidden")) {
+    openChatWidget();
+  } else {
+    $("chat-widget").classList.add("hidden");
   }
 });
 $("chat-form").addEventListener("submit", onChatSubmit);
 $("chat-input").addEventListener("input", autoResizeChatInput);
+
+// Enter sends the message (matches every other chat UI); Shift+Enter still
+// inserts a newline, since the textarea supports multi-line questions.
+$("chat-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    $("chat-form").requestSubmit();
+  }
+});
+
+$("chat-suggestions").addEventListener("click", (e) => {
+  const btn = e.target.closest(".chat-suggestion");
+  if (!btn || !btn.dataset.fill) return;
+  const input = fillChatInputAndFocus(btn.dataset.fill);
+  // "Добавить слово ... в словарь" — pre-select the "..." placeholder so
+  // typing the actual (English) word immediately overwrites it.
+  const placeholder = btn.dataset.fill.indexOf("...");
+  if (placeholder !== -1) {
+    input.setSelectionRange(placeholder, placeholder + 3);
+  } else {
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+});
 
 // Tapping/clicking outside the open floating chat closes it — standard
 // popover behavior expected on mobile. Doesn't apply once the widget is
@@ -325,11 +354,7 @@ function switchScreen(name) {
     }
   }
   if (name === "training") {
-    if (!state.trainingStarted || state.trainingCompleted) {
-      showTrainingSetup();
-    } else {
-      renderRound();
-    }
+    showTrainingModePicker();
   }
   if (name === "theory") {
     loadTheoryData();
@@ -370,46 +395,123 @@ function autoResizeChatInput() {
   el.style.height = `${el.scrollHeight}px`;
 }
 
+function openChatWidget() {
+  $("chat-widget").classList.remove("hidden");
+  loadAIStatus();
+  renderChatMessages();
+  autoResizeChatInput();
+  loadTopicSuggestion();
+}
+
+// The weakest topic per the adaptive learning/BKT tracking (same data as the
+// "К повторению" stats) — shared by the chat suggestion chip and the home
+// digest widget, so opening either doesn't fire a duplicate request; fetched
+// once per session (doesn't change within one sitting).
+let weakTopicPromise = null;
+
+function getWeakTopic() {
+  if (!weakTopicPromise) {
+    weakTopicPromise = apiFetch(`/ai/weak-topics?limit=1`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((topics) => topics?.[0]?.word || null)
+      .catch(() => null);
+  }
+  return weakTopicPromise;
+}
+
+function fillChatInputAndFocus(text) {
+  const input = $("chat-input");
+  input.value = text;
+  autoResizeChatInput();
+  input.focus();
+  return input;
+}
+
+async function loadTopicSuggestion() {
+  const topic = await getWeakTopic();
+  if (!topic) return;
+  const btn = $("chat-suggestion-topic");
+  btn.textContent = `Изучить тему: ${topic}`;
+  btn.dataset.fill = `Объясни тему "${topic}" и дай пример`;
+  btn.classList.remove("hidden");
+}
+
+// Selecting a phrase inside a theory topic shows a small "Спросить AI" button
+// next to the selection; clicking it drops the text into the floating chat's
+// input (not auto-sent — the user adds their own question around it).
+let selectionAskBtn = null;
+
+function ensureSelectionAskBtn() {
+  if (selectionAskBtn) return selectionAskBtn;
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.id = "selection-ask-btn";
+  btn.className = "selection-ask-btn hidden";
+  btn.textContent = "Спросить AI";
+  btn.addEventListener("mousedown", (e) => e.preventDefault());
+  btn.addEventListener("click", onSelectionAskClick);
+  document.body.appendChild(btn);
+  selectionAskBtn = btn;
+  return btn;
+}
+
+function onTheorySelectionChange() {
+  const btn = ensureSelectionAskBtn();
+  const content = $("theory-topic-content");
+  const sel = window.getSelection();
+  const text = sel && sel.toString().trim();
+  if (!text || sel.rangeCount === 0 || !content.contains(sel.anchorNode)) {
+    btn.classList.add("hidden");
+    return;
+  }
+  const rect = sel.getRangeAt(0).getBoundingClientRect();
+  btn.style.left = `${rect.left + window.scrollX}px`;
+  btn.style.top = `${rect.top + window.scrollY - 36}px`;
+  btn.dataset.selectedText = text;
+  btn.classList.remove("hidden");
+}
+
+function onSelectionAskClick() {
+  const text = selectionAskBtn.dataset.selectedText || "";
+  selectionAskBtn.classList.add("hidden");
+  window.getSelection()?.removeAllRanges();
+  openChatWidget();
+  const input = $("chat-input");
+  input.value = text;
+  autoResizeChatInput();
+  input.focus();
+}
+
+$("theory-topic-content").addEventListener("mouseup", onTheorySelectionChange);
+
+async function ensureTheoryDataLoaded() {
+  if (state.theoryLoaded) return;
+  const res = await fetch(THEORY_SOURCE_URL);
+  if (!res.ok) {
+    showError("Не удалось загрузить теорию");
+    throw new Error("theory data load failed");
+  }
+  state.theoryData = await res.json();
+  state.theoryLoaded = true;
+}
+
 async function loadTheoryData() {
-  if (!state.theoryLoaded) {
-    const res = await fetch(THEORY_SOURCE_URL);
-    if (!res.ok) {
-      showError("Не удалось загрузить теорию");
-      return;
-    }
-    state.theoryData = await res.json();
-    state.theoryLoaded = true;
+  try {
+    await ensureTheoryDataLoaded();
+  } catch {
+    return;
   }
-  renderTheoryCategories();
+  renderTheoryTopicList(state.theoryData.categories.flatMap((c) => c.topics));
 }
 
-function renderTheoryCategories() {
-  $("theory-topics").classList.add("hidden");
-  $("theory-detail").classList.add("hidden");
-  const container = $("theory-categories");
-  container.classList.remove("hidden");
-  container.innerHTML = "";
-  for (const category of state.theoryData.categories) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "theory-category-card";
-    btn.textContent = category.title;
-    btn.addEventListener("click", () => renderTheoryTopicList(category));
-    container.appendChild(btn);
-  }
-}
-
-function renderTheoryTopicList(category) {
-  state.theoryCurrentCategory = category;
-  $("theory-categories").classList.add("hidden");
+function renderTheoryTopicList(topics) {
   $("theory-detail").classList.add("hidden");
   $("theory-topics").classList.remove("hidden");
-  $("theory-category-title").textContent = category.title;
 
   const list = $("theory-topic-list");
   list.innerHTML = "";
   let lastGroup = null;
-  for (const topic of category.topics) {
+  for (const topic of topics) {
     if (topic.group && topic.group !== lastGroup) {
       const groupHeading = document.createElement("div");
       groupHeading.className = "theory-topic-group";
@@ -433,6 +535,281 @@ function renderTheoryTopic(topic) {
   $("theory-detail").classList.remove("hidden");
   $("theory-topic-title").textContent = topic.title;
   $("theory-topic-content").innerHTML = topic.html;
+  wireExerciseChecks();
+  renderTopicQuiz(topic);
+}
+
+// The lesson content's own "Упражнения" blocks (verbatim from lingust.ru) come
+// with fill-in-the-blank <input>s and a static <details> answer-key reveal —
+// this adds a "Проверить" button next to each exercise that instead sends the
+// student's typed answers to the AI for grading + an explanation on mistakes.
+function buildExerciseContext(ol) {
+  const clone = ol.cloneNode(true);
+  clone.querySelectorAll("input").forEach((input, idx) => {
+    input.replaceWith(document.createTextNode(`___${idx + 1}___`));
+  });
+  return clone.textContent.replace(/\s+/g, " ").trim();
+}
+
+function wireExerciseChecks() {
+  const content = $("theory-topic-content");
+  content.querySelectorAll("ol[data-answer-key]").forEach((ol) => {
+    if (ol.dataset.checkWired) return;
+    ol.dataset.checkWired = "true";
+
+    const answerKeyText = ol.dataset.answerKey || "";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "theory-check-btn";
+    btn.textContent = "Проверить";
+    const resultsEl = document.createElement("div");
+    resultsEl.className = "theory-check-results hidden";
+    ol.after(btn, resultsEl);
+
+    btn.addEventListener("click", () => checkExerciseAnswers(ol, answerKeyText, btn, resultsEl));
+  });
+}
+
+async function checkExerciseAnswers(ol, answerKeyText, btn, resultsEl) {
+  const inputs = Array.from(ol.querySelectorAll("input[type=text]"));
+  const userAnswers = inputs.map((input) => input.value.trim());
+  if (userAnswers.every((a) => !a)) {
+    showError("Сначала впишите свои ответы в поля");
+    return;
+  }
+
+  const exerciseContext = buildExerciseContext(ol);
+  btn.disabled = true;
+  btn.textContent = "Проверяю…";
+  resultsEl.classList.remove("hidden");
+  resultsEl.innerHTML = '<p class="practice-loading">Проверяю ответы…</p>';
+  try {
+    const res = await apiFetch(`/theory/check-exercise`, {
+      method: "POST",
+      body: JSON.stringify({ exercise_context: exerciseContext, answer_key: answerKeyText, user_answers: userAnswers }),
+    });
+    if (!res.ok) {
+      throw new Error(await readError(res));
+    }
+    const data = await res.json();
+    resultsEl.innerHTML = "";
+    (data.results || []).forEach((r, idx) => {
+      const row = document.createElement("div");
+      row.className = `theory-check-row ${r.correct ? "correct" : "wrong"}`;
+      const verdict = r.correct
+        ? "✓ верно"
+        : `✗ неверно — правильный ответ: <em>${escapeHtml(r.correct_answer || "")}</em>`;
+      const explanation = !r.correct && r.explanation
+        ? `<div class="theory-check-explanation">${escapeHtml(r.explanation)}</div>`
+        : "";
+      row.innerHTML = `<strong>${idx + 1}.</strong> ${verdict}${explanation}`;
+      resultsEl.appendChild(row);
+      if (inputs[idx]) {
+        inputs[idx].classList.toggle("correct", r.correct);
+        inputs[idx].classList.toggle("wrong", !r.correct);
+      }
+    });
+  } catch (err) {
+    resultsEl.innerHTML = `<p class="quiz-meta">Не удалось проверить: ${escapeHtml(err?.message || "ошибка")}</p>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Проверить";
+  }
+}
+
+async function fetchTopicQuiz(topic) {
+  const level = topic.level?.match(/[ABC][12]/)?.[0] || "B1";
+  const res = await apiFetch(`/theory/quiz`, {
+    method: "POST",
+    body: JSON.stringify({ topic_title: topic.title, topic_content: topic.html, level }),
+  });
+  if (!res.ok) {
+    throw new Error(await readError(res));
+  }
+  return await res.json();
+}
+
+async function renderTopicQuiz(topic) {
+  const el = $("theory-quiz");
+  el.innerHTML = '<p class="practice-loading">Готовлю квиз по теме…</p>';
+  let data;
+  try {
+    data = await fetchTopicQuiz(topic);
+  } catch (err) {
+    if (state.theoryCurrentTopic?.id !== topic.id) return;
+    el.innerHTML = `<p class="quiz-meta">Не удалось сгенерировать квиз: ${escapeHtml(err?.message || "ошибка")}</p>`;
+    return;
+  }
+  if (state.theoryCurrentTopic?.id !== topic.id) return;
+  el.innerHTML = "";
+  el.appendChild(buildQuizMetaEl(data));
+  el.appendChild(buildQuizQuestionsEl(data.questions, () => markTopicCompleted(topic.id)));
+}
+
+function markTopicCompleted(topicId) {
+  apiFetch(`/theory/topic-progress`, {
+    method: "POST",
+    body: JSON.stringify({ topic_id: topicId }),
+  }).catch(() => {});
+}
+
+const CEFR_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
+function cefrIndex(level) {
+  const idx = CEFR_ORDER.indexOf((level || "").toUpperCase());
+  return idx === -1 ? CEFR_ORDER.length - 1 : idx;
+}
+
+async function startTenseDrill() {
+  $("training-drill").classList.remove("hidden");
+  const itemsEl = $("training-drill-items");
+  itemsEl.innerHTML = '<p class="practice-loading">Подбираю пройденные темы…</p>';
+
+  try {
+    await ensureTheoryDataLoaded();
+  } catch {
+    itemsEl.innerHTML = '<p class="quiz-meta">Не удалось загрузить темы теории.</p>';
+    return;
+  }
+
+  let userLevel = "B1";
+  try {
+    const meRes = await apiFetch(`/auth/me`);
+    if (meRes.ok) {
+      const me = await meRes.json();
+      userLevel = me.cefr_level || userLevel;
+    }
+  } catch {
+    // fall back to default level below
+  }
+
+  let completedIds = [];
+  try {
+    const progressRes = await apiFetch(`/theory/topic-progress`);
+    if (progressRes.ok) {
+      const data = await progressRes.json();
+      completedIds = data.topic_ids || [];
+    }
+  } catch {
+    // treated as no completed topics below
+  }
+
+  const allTopics = state.theoryData.categories.flatMap((c) => c.topics);
+  const eligibleTopics = allTopics.filter(
+    (t) => completedIds.includes(t.id) && cefrIndex(t.level?.match(/[ABC][12]/)?.[0]) <= cefrIndex(userLevel)
+  );
+
+  if (eligibleTopics.length < 2) {
+    itemsEl.innerHTML =
+      '<p class="quiz-meta">Пройди хотя бы 2 темы теории (с квизом до конца), чтобы открыть эту тренировку.</p>';
+    return;
+  }
+
+  itemsEl.innerHTML = '<p class="practice-loading">Готовлю предложения для перевода…</p>';
+  let data;
+  try {
+    const res = await apiFetch(`/theory/drill/generate`, {
+      method: "POST",
+      body: JSON.stringify({
+        topics: eligibleTopics.map((t) => ({ title: t.title, level: t.level, content: t.html })),
+        level: userLevel,
+        count: 5,
+      }),
+    });
+    if (!res.ok) {
+      throw new Error(await readError(res));
+    }
+    data = await res.json();
+  } catch (err) {
+    itemsEl.innerHTML = `<p class="quiz-meta">Не удалось сгенерировать тренировку: ${escapeHtml(err?.message || "ошибка")}</p>`;
+    return;
+  }
+
+  const tenseOptions = [...new Set(eligibleTopics.map((t) => t.title))];
+  itemsEl.innerHTML = "";
+  (data.items || []).forEach((item, idx) => {
+    itemsEl.appendChild(buildDrillItemEl(item, idx, tenseOptions));
+  });
+}
+
+function buildDrillItemEl(item, idx, tenseOptions) {
+  const card = document.createElement("div");
+  card.className = "theory-drill-item";
+  card.innerHTML = `
+    <div class="quiz-prompt">${idx + 1}. ${escapeHtml(item.sentence_ru)}</div>
+    <div class="theory-drill-tense-options"></div>
+    <input type="text" class="theory-drill-translation" placeholder="Перевод на английский" />
+    <button type="button" class="theory-check-btn">Проверить</button>
+    <div class="theory-check-results hidden"></div>
+  `;
+  const tenseWrap = card.querySelector(".theory-drill-tense-options");
+  const input = card.querySelector(".theory-drill-translation");
+  const btn = card.querySelector(".theory-check-btn");
+  const resultsEl = card.querySelector(".theory-check-results");
+
+  let selectedTense = null;
+  const tenseButtons = tenseOptions.map((tense) => {
+    const tb = document.createElement("button");
+    tb.type = "button";
+    tb.className = "practice-option-btn";
+    tb.textContent = tense;
+    tb.addEventListener("click", () => {
+      if (card.dataset.checked) return;
+      selectedTense = tense;
+      tenseWrap.querySelectorAll("button").forEach((b) => b.classList.toggle("selected", b === tb));
+    });
+    tenseWrap.appendChild(tb);
+    return tb;
+  });
+
+  btn.addEventListener("click", async () => {
+    const translation = input.value.trim();
+    if (!selectedTense || !translation) {
+      showError("Выбери время и впиши перевод");
+      return;
+    }
+    card.dataset.checked = "true";
+    const tenseCorrect = selectedTense === item.correct_tense;
+    tenseButtons.forEach((tb) => {
+      if (tb.textContent === item.correct_tense) tb.classList.add("correct");
+      else if (tb.classList.contains("selected")) tb.classList.add("wrong");
+    });
+
+    btn.disabled = true;
+    btn.textContent = "Проверяю…";
+    resultsEl.classList.remove("hidden");
+    resultsEl.innerHTML = '<p class="practice-loading">Проверяю перевод…</p>';
+    try {
+      const res = await apiFetch(`/theory/check-exercise`, {
+        method: "POST",
+        body: JSON.stringify({
+          exercise_context: `Переведите на английский: ${item.sentence_ru}`,
+          answer_key: item.reference_translation,
+          user_answers: [translation],
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(await readError(res));
+      }
+      const data = await res.json();
+      const r = (data.results || [])[0] || { correct: false, correct_answer: item.reference_translation, explanation: "" };
+      const tenseRow = `<div class="theory-check-row ${tenseCorrect ? "correct" : "wrong"}">Время: ${tenseCorrect ? "✓ верно" : `✗ неверно — правильно: <em>${escapeHtml(item.correct_tense)}</em>`}</div>`;
+      const translationVerdict = r.correct
+        ? "✓ верно"
+        : `✗ неверно — правильный перевод: <em>${escapeHtml(r.correct_answer || "")}</em>`;
+      const explanation = !r.correct && r.explanation
+        ? `<div class="theory-check-explanation">${escapeHtml(r.explanation)}</div>`
+        : "";
+      resultsEl.innerHTML = `${tenseRow}<div class="theory-check-row ${r.correct ? "correct" : "wrong"}">Перевод: ${translationVerdict}${explanation}</div>`;
+    } catch (err) {
+      resultsEl.innerHTML = `<p class="quiz-meta">Не удалось проверить перевод: ${escapeHtml(err?.message || "ошибка")}</p>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Проверить";
+    }
+  });
+
+  return card;
 }
 
 // Topic titles are mostly Russian ("⭐ Present Perfect vs Past Simple — главная
@@ -1022,6 +1399,17 @@ async function addSelectedTopicWords() {
   showInfo(parts.join(", "));
 }
 
+function showTrainingModePicker() {
+  $("training-mode-picker").classList.remove("hidden");
+  $("train-setup").classList.add("hidden");
+  $("training-card").classList.add("hidden");
+  $("training-drill").classList.add("hidden");
+}
+
+function enterTrainingMode() {
+  $("training-mode-picker").classList.add("hidden");
+}
+
 function showTrainingSetup() {
   state.trainingStarted = false;
   $("train-restart").classList.add("hidden");
@@ -1426,10 +1814,79 @@ async function loadStats() {
   renderVocabBar(stats);
   renderRoundsChart(stats);
   renderLevelsChart(stats);
+  loadHomeDigest();
   if (document.getElementById("screen-stats")?.classList.contains("active")) {
     await loadActivity();
   }
 }
+
+let homeDigestLoaded = false;
+
+// Three small "useful widgets" under the home screen's stat cards: current
+// streak (badge in the cards row), grammar topic of the day (same rotation
+// as the floating tips widget), and the adaptive engine's weakest-topic
+// recommendation — clicking the latter opens the chat with the question
+// pre-filled, the same entry point as the chat's own suggestion chip.
+async function loadHomeDigest() {
+  if (homeDigestLoaded) return;
+  homeDigestLoaded = true;
+
+  try {
+    const res = await apiFetch(`/stats/activity?days=84`);
+    if (res.ok) {
+      const rows = await res.json();
+      const map = new Map(rows.map((r) => [r.date, r.count]));
+      const today = new Date();
+      const days = [];
+      for (let i = 83; i >= 0; i -= 1) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        days.push({ count: map.get(d.toISOString().slice(0, 10)) || 0 });
+      }
+      $("home-streak").textContent = `${computeStreak(days)} 🔥`;
+    }
+  } catch (_err) {
+    // leave the default "0 🔥" — not worth surfacing as an error
+  }
+
+  if (!state.theoryLoaded) {
+    try {
+      const res = await fetch(THEORY_SOURCE_URL);
+      if (res.ok) {
+        state.theoryData = await res.json();
+        state.theoryLoaded = true;
+      }
+    } catch (_err) {
+      // topic-of-the-day item just stays hidden below
+    }
+  }
+  const dailyTopic = pickDailyTopic(state.theoryData?.categories?.[0]?.topics || []);
+  if (dailyTopic) {
+    const item = $("home-digest-topic");
+    item.querySelector(".home-digest-text").textContent = `Тема дня: ${dailyTopic.title}`;
+    item.classList.remove("hidden");
+  }
+
+  const weakTopic = await getWeakTopic();
+  if (weakTopic) {
+    const btn = $("home-digest-weak");
+    btn.querySelector(".home-digest-text").textContent = `Слабое место: ${weakTopic}`;
+    btn.dataset.fill = `Объясни тему "${weakTopic}" и дай пример`;
+    btn.classList.remove("hidden");
+  }
+}
+
+$("home-digest-weak").addEventListener("click", (e) => {
+  const fill = $("home-digest-weak").dataset.fill;
+  if (!fill) return;
+  // Without this, the same click bubbles up to the document-level "outside
+  // click closes the chat" listener right after openChatWidget() makes it
+  // visible — since the click's origin (this button) is outside the widget,
+  // it would immediately hide it again.
+  e.stopPropagation();
+  openChatWidget();
+  fillChatInputAndFocus(fill);
+});
 
 // Rotates through the tense topics by day-of-year, so the suggestion changes
 // daily but stays stable across repeated opens on the same day.
@@ -2066,10 +2523,13 @@ async function onChatSubmit(e) {
   const input = $("chat-input");
   const text = input.value.trim();
   if (!text) return;
-
-  state.chatMessages.push({ role: "user", text });
   input.value = "";
   input.style.height = "auto";
+  await sendChatMessage(text);
+}
+
+async function sendChatMessage(text) {
+  state.chatMessages.push({ role: "user", text });
 
   if (PRACTICE_INTENT_RE.test(text)) {
     // /practice/generate has a canonical fallback, so this works even without a live AI
@@ -2277,7 +2737,7 @@ async function fetchPracticeSet(words, level = "B1") {
 }
 
 function buildQuizMetaEl(data) {
-  const sourceLabel = data.source === "repetitor" ? "AI-репетитор" : "локальный шаблон";
+  const sourceLabel = data.source === "topic" ? "по теме" : data.source === "repetitor" ? "AI-репетитор" : "локальный шаблон";
   const materialsPart = Array.isArray(data.sources) && data.sources.length > 0
     ? ` · Материалы: ${data.sources.join(", ")}`
     : "";
@@ -2287,9 +2747,10 @@ function buildQuizMetaEl(data) {
   return el;
 }
 
-function buildQuizQuestionsEl(questions) {
+function buildQuizQuestionsEl(questions, onAllAnswered) {
   const container = document.createElement("div");
   container.className = "practice-quiz";
+  const blocks = [];
   (questions || []).forEach((q, qIdx) => {
     const block = document.createElement("div");
     block.className = "quiz-question";
@@ -2298,6 +2759,7 @@ function buildQuizQuestionsEl(questions) {
       <div class="quiz-options"></div>
       <div class="quiz-explanation hidden"></div>
     `;
+    blocks.push(block);
     const optionsWrap = block.querySelector(".quiz-options");
     const explanationEl = block.querySelector(".quiz-explanation");
     (q.options || []).forEach((option, optIdx) => {
@@ -2317,6 +2779,9 @@ function buildQuizQuestionsEl(questions) {
         });
         explanationEl.textContent = q.explanation || "";
         explanationEl.classList.remove("hidden");
+        if (onAllAnswered && blocks.every((b) => b.dataset.answered)) {
+          onAllAnswered();
+        }
       });
       optionsWrap.appendChild(btn);
     });
