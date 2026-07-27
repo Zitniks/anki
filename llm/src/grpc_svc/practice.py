@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 from typing import Any
 
@@ -119,4 +120,48 @@ async def generate_practice(
         "questions": questions,
         "source": "repetitor",
         "rag_sources": rag["sources"],
+    }
+
+
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _strip_html(html: str) -> str:
+    return re.sub(r"\s+", " ", _TAG_RE.sub(" ", html)).strip()
+
+
+def build_topic_quiz_prompt(topic_title: str, topic_text: str, level: str) -> str:
+    return (
+        f"You are an English tutor. Create a 5-question multiple-choice quiz for CEFR level "
+        f"{level}, testing understanding of the grammar topic \"{topic_title}\".\n"
+        "Base every question strictly on the grammar rules and examples in the lesson text below "
+        "— do not test unrelated vocabulary or grammar.\n"
+        "Each question must have exactly 4 options, one correct answer, and a short explanation "
+        "(1-2 sentences) of why that answer is correct, referencing the rule from the lesson.\n"
+        f"Fresh variant token: {time.time_ns()}.\n"
+        f"\nLesson text:\n{topic_text}"
+    )
+
+
+async def generate_topic_practice(
+    topic_title: str,
+    topic_content: str,
+    level: str,
+) -> dict[str, Any]:
+    topic_text = _strip_html(topic_content)
+    prompt = build_topic_quiz_prompt(topic_title, topic_text, level or "B1")
+    quiz: PracticeQuiz = await _quiz_generator.ainvoke(prompt)
+    questions = [
+        {
+            "prompt": _clean(q.prompt),
+            "options": [_clean(opt) for opt in q.options],
+            "correct_index": q.correct_index,
+            "explanation": _clean(q.explanation),
+        }
+        for q in quiz.questions
+    ]
+    return {
+        "questions": questions,
+        "source": "topic",
+        "rag_sources": [],
     }
