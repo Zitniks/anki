@@ -232,7 +232,23 @@ func (c *Client) credentials() *tutorpb.Credentials {
 // authenticated user, e.g. none currently) — every Anki user shares the same
 // Credentials, so without AnkiUserId, repetitor has no way to tell them
 // apart (see Session's doc comment in tutor.proto).
+//
+// ProjectId/ChatId/PracticeChatId are left blank for a real userID so
+// repetitor's ensure_project/ensure_chat resolve (and cache) a project keyed
+// on AnkiUserId instead of falling back to the one project bootstrap()
+// cached at startup — sending the bootstrap IDs here would collapse every
+// Anki account into that single shared project/chat regardless of
+// AnkiUserId (this bit rotted: bootstrap() and session() used to be the
+// same zero-arg method before per-user isolation was added, and this half
+// was never updated to match). userID == 0 keeps the old shared-project
+// behavior, matching repetitor's own fallback for anki_user_id=0.
 func (c *Client) session(userID int64) *tutorpb.Session {
+	if userID != 0 {
+		return &tutorpb.Session{
+			Credentials: c.credentials(),
+			AnkiUserId:  userID,
+		}
+	}
 	return &tutorpb.Session{
 		Credentials:    c.credentials(),
 		ProjectId:      c.projectID,
