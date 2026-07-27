@@ -63,6 +63,8 @@ message PracticeRequest {
   Session session = 1;
   repeated string words = 2;
   string level = 3;
+  string topic_title = 4;
+  string topic_content = 5;
 }
 
 message PracticeQuestion {
@@ -159,6 +161,46 @@ message GetWeakTopicsResponse {
   repeated WeakTopic topics = 1;
 }
 
+message CheckAnswersRequest {
+  Session session = 1;
+  string exercise_context = 2;
+  string answer_key = 3;
+  repeated string user_answers = 4;
+}
+
+message AnswerCheckItem {
+  bool correct = 1;
+  string correct_answer = 2;
+  string explanation = 3;
+}
+
+message CheckAnswersResponse {
+  repeated AnswerCheckItem results = 1;
+}
+
+message TenseDrillTopic {
+  string title = 1;
+  string level = 2;
+  string content = 3;
+}
+
+message GenerateTenseDrillRequest {
+  Session session = 1;
+  repeated TenseDrillTopic topics = 2;
+  string level = 3;
+  int32 count = 4;
+}
+
+message TenseDrillItem {
+  string sentence_ru = 1;
+  string correct_tense = 2;
+  string reference_translation = 3;
+}
+
+message GenerateTenseDrillResponse {
+  repeated TenseDrillItem items = 1;
+}
+
 // TutorService is implemented by adaptive-learning-repetitor.
 // Anki is the gRPC client.
 service TutorService {
@@ -171,6 +213,8 @@ service TutorService {
   rpc PublishEvent(PublishEventRequest) returns (PublishEventResponse);
   rpc ExplainError(ExplainErrorRequest) returns (ExplainErrorResponse);
   rpc GetWeakTopics(GetWeakTopicsRequest) returns (GetWeakTopicsResponse);
+  rpc CheckAnswers(CheckAnswersRequest) returns (CheckAnswersResponse);
+  rpc GenerateTenseDrill(GenerateTenseDrillRequest) returns (GenerateTenseDrillResponse);
 }
 
 // ===========================================================================

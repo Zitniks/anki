@@ -82,6 +82,16 @@ class TutorServiceStub:
                 request_serializer=tutor_dot_v1_dot_tutor__pb2.GetWeakTopicsRequest.SerializeToString,
                 response_deserializer=tutor_dot_v1_dot_tutor__pb2.GetWeakTopicsResponse.FromString,
                 _registered_method=True)
+        self.CheckAnswers = channel.unary_unary(
+                '/tutor.v1.TutorService/CheckAnswers',
+                request_serializer=tutor_dot_v1_dot_tutor__pb2.CheckAnswersRequest.SerializeToString,
+                response_deserializer=tutor_dot_v1_dot_tutor__pb2.CheckAnswersResponse.FromString,
+                _registered_method=True)
+        self.GenerateTenseDrill = channel.unary_unary(
+                '/tutor.v1.TutorService/GenerateTenseDrill',
+                request_serializer=tutor_dot_v1_dot_tutor__pb2.GenerateTenseDrillRequest.SerializeToString,
+                response_deserializer=tutor_dot_v1_dot_tutor__pb2.GenerateTenseDrillResponse.FromString,
+                _registered_method=True)
 
 
 class TutorServiceServicer:
@@ -143,6 +153,18 @@ class TutorServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def CheckAnswers(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GenerateTenseDrill(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_TutorServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -190,6 +212,16 @@ def add_TutorServiceServicer_to_server(servicer, server):
                     servicer.GetWeakTopics,
                     request_deserializer=tutor_dot_v1_dot_tutor__pb2.GetWeakTopicsRequest.FromString,
                     response_serializer=tutor_dot_v1_dot_tutor__pb2.GetWeakTopicsResponse.SerializeToString,
+            ),
+            'CheckAnswers': grpc.unary_unary_rpc_method_handler(
+                    servicer.CheckAnswers,
+                    request_deserializer=tutor_dot_v1_dot_tutor__pb2.CheckAnswersRequest.FromString,
+                    response_serializer=tutor_dot_v1_dot_tutor__pb2.CheckAnswersResponse.SerializeToString,
+            ),
+            'GenerateTenseDrill': grpc.unary_unary_rpc_method_handler(
+                    servicer.GenerateTenseDrill,
+                    request_deserializer=tutor_dot_v1_dot_tutor__pb2.GenerateTenseDrillRequest.FromString,
+                    response_serializer=tutor_dot_v1_dot_tutor__pb2.GenerateTenseDrillResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -437,6 +469,60 @@ class TutorService:
             '/tutor.v1.TutorService/GetWeakTopics',
             tutor_dot_v1_dot_tutor__pb2.GetWeakTopicsRequest.SerializeToString,
             tutor_dot_v1_dot_tutor__pb2.GetWeakTopicsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CheckAnswers(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/tutor.v1.TutorService/CheckAnswers',
+            tutor_dot_v1_dot_tutor__pb2.CheckAnswersRequest.SerializeToString,
+            tutor_dot_v1_dot_tutor__pb2.CheckAnswersResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GenerateTenseDrill(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/tutor.v1.TutorService/GenerateTenseDrill',
+            tutor_dot_v1_dot_tutor__pb2.GenerateTenseDrillRequest.SerializeToString,
+            tutor_dot_v1_dot_tutor__pb2.GenerateTenseDrillResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v7.34.0
-// source: tutor/v1/tutor.proto
+// source: proto/tutor/v1/tutor.proto
 
 package tutorpb
 
@@ -20,15 +20,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TutorService_Health_FullMethodName           = "/tutor.v1.TutorService/Health"
-	TutorService_EnsureSession_FullMethodName    = "/tutor.v1.TutorService/EnsureSession"
-	TutorService_Chat_FullMethodName             = "/tutor.v1.TutorService/Chat"
-	TutorService_GeneratePractice_FullMethodName = "/tutor.v1.TutorService/GeneratePractice"
-	TutorService_SearchRag_FullMethodName        = "/tutor.v1.TutorService/SearchRag"
-	TutorService_EnrichWord_FullMethodName       = "/tutor.v1.TutorService/EnrichWord"
-	TutorService_PublishEvent_FullMethodName     = "/tutor.v1.TutorService/PublishEvent"
-	TutorService_ExplainError_FullMethodName     = "/tutor.v1.TutorService/ExplainError"
-	TutorService_GetWeakTopics_FullMethodName    = "/tutor.v1.TutorService/GetWeakTopics"
+	TutorService_Health_FullMethodName             = "/tutor.v1.TutorService/Health"
+	TutorService_EnsureSession_FullMethodName      = "/tutor.v1.TutorService/EnsureSession"
+	TutorService_Chat_FullMethodName               = "/tutor.v1.TutorService/Chat"
+	TutorService_GeneratePractice_FullMethodName   = "/tutor.v1.TutorService/GeneratePractice"
+	TutorService_SearchRag_FullMethodName          = "/tutor.v1.TutorService/SearchRag"
+	TutorService_EnrichWord_FullMethodName         = "/tutor.v1.TutorService/EnrichWord"
+	TutorService_PublishEvent_FullMethodName       = "/tutor.v1.TutorService/PublishEvent"
+	TutorService_ExplainError_FullMethodName       = "/tutor.v1.TutorService/ExplainError"
+	TutorService_GetWeakTopics_FullMethodName      = "/tutor.v1.TutorService/GetWeakTopics"
+	TutorService_CheckAnswers_FullMethodName       = "/tutor.v1.TutorService/CheckAnswers"
+	TutorService_GenerateTenseDrill_FullMethodName = "/tutor.v1.TutorService/GenerateTenseDrill"
 )
 
 // TutorServiceClient is the client API for TutorService service.
@@ -47,6 +49,8 @@ type TutorServiceClient interface {
 	PublishEvent(ctx context.Context, in *PublishEventRequest, opts ...grpc.CallOption) (*PublishEventResponse, error)
 	ExplainError(ctx context.Context, in *ExplainErrorRequest, opts ...grpc.CallOption) (*ExplainErrorResponse, error)
 	GetWeakTopics(ctx context.Context, in *GetWeakTopicsRequest, opts ...grpc.CallOption) (*GetWeakTopicsResponse, error)
+	CheckAnswers(ctx context.Context, in *CheckAnswersRequest, opts ...grpc.CallOption) (*CheckAnswersResponse, error)
+	GenerateTenseDrill(ctx context.Context, in *GenerateTenseDrillRequest, opts ...grpc.CallOption) (*GenerateTenseDrillResponse, error)
 }
 
 type tutorServiceClient struct {
@@ -156,6 +160,26 @@ func (c *tutorServiceClient) GetWeakTopics(ctx context.Context, in *GetWeakTopic
 	return out, nil
 }
 
+func (c *tutorServiceClient) CheckAnswers(ctx context.Context, in *CheckAnswersRequest, opts ...grpc.CallOption) (*CheckAnswersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckAnswersResponse)
+	err := c.cc.Invoke(ctx, TutorService_CheckAnswers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tutorServiceClient) GenerateTenseDrill(ctx context.Context, in *GenerateTenseDrillRequest, opts ...grpc.CallOption) (*GenerateTenseDrillResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GenerateTenseDrillResponse)
+	err := c.cc.Invoke(ctx, TutorService_GenerateTenseDrill_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TutorServiceServer is the server API for TutorService service.
 // All implementations must embed UnimplementedTutorServiceServer
 // for forward compatibility.
@@ -172,6 +196,8 @@ type TutorServiceServer interface {
 	PublishEvent(context.Context, *PublishEventRequest) (*PublishEventResponse, error)
 	ExplainError(context.Context, *ExplainErrorRequest) (*ExplainErrorResponse, error)
 	GetWeakTopics(context.Context, *GetWeakTopicsRequest) (*GetWeakTopicsResponse, error)
+	CheckAnswers(context.Context, *CheckAnswersRequest) (*CheckAnswersResponse, error)
+	GenerateTenseDrill(context.Context, *GenerateTenseDrillRequest) (*GenerateTenseDrillResponse, error)
 	mustEmbedUnimplementedTutorServiceServer()
 }
 
@@ -208,6 +234,12 @@ func (UnimplementedTutorServiceServer) ExplainError(context.Context, *ExplainErr
 }
 func (UnimplementedTutorServiceServer) GetWeakTopics(context.Context, *GetWeakTopicsRequest) (*GetWeakTopicsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetWeakTopics not implemented")
+}
+func (UnimplementedTutorServiceServer) CheckAnswers(context.Context, *CheckAnswersRequest) (*CheckAnswersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckAnswers not implemented")
+}
+func (UnimplementedTutorServiceServer) GenerateTenseDrill(context.Context, *GenerateTenseDrillRequest) (*GenerateTenseDrillResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GenerateTenseDrill not implemented")
 }
 func (UnimplementedTutorServiceServer) mustEmbedUnimplementedTutorServiceServer() {}
 func (UnimplementedTutorServiceServer) testEmbeddedByValue()                      {}
@@ -385,6 +417,42 @@ func _TutorService_GetWeakTopics_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TutorService_CheckAnswers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckAnswersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TutorServiceServer).CheckAnswers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TutorService_CheckAnswers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TutorServiceServer).CheckAnswers(ctx, req.(*CheckAnswersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TutorService_GenerateTenseDrill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateTenseDrillRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TutorServiceServer).GenerateTenseDrill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TutorService_GenerateTenseDrill_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TutorServiceServer).GenerateTenseDrill(ctx, req.(*GenerateTenseDrillRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TutorService_ServiceDesc is the grpc.ServiceDesc for TutorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -424,6 +492,14 @@ var TutorService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetWeakTopics",
 			Handler:    _TutorService_GetWeakTopics_Handler,
 		},
+		{
+			MethodName: "CheckAnswers",
+			Handler:    _TutorService_CheckAnswers_Handler,
+		},
+		{
+			MethodName: "GenerateTenseDrill",
+			Handler:    _TutorService_GenerateTenseDrill_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -432,7 +508,7 @@ var TutorService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "tutor/v1/tutor.proto",
+	Metadata: "proto/tutor/v1/tutor.proto",
 }
 
 const (
@@ -610,5 +686,5 @@ var LearnWriteService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "tutor/v1/tutor.proto",
+	Metadata: "proto/tutor/v1/tutor.proto",
 }

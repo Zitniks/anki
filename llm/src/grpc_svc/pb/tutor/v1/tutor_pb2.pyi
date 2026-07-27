@@ -92,14 +92,18 @@ class ChatEvent(_message.Message):
     def __init__(self, type: _Optional[str] = ..., content: _Optional[str] = ..., status: _Optional[str] = ..., error: _Optional[str] = ...) -> None: ...
 
 class PracticeRequest(_message.Message):
-    __slots__ = ("session", "words", "level")
+    __slots__ = ("session", "words", "level", "topic_title", "topic_content")
     SESSION_FIELD_NUMBER: _ClassVar[int]
     WORDS_FIELD_NUMBER: _ClassVar[int]
     LEVEL_FIELD_NUMBER: _ClassVar[int]
+    TOPIC_TITLE_FIELD_NUMBER: _ClassVar[int]
+    TOPIC_CONTENT_FIELD_NUMBER: _ClassVar[int]
     session: Session
     words: _containers.RepeatedScalarFieldContainer[str]
     level: str
-    def __init__(self, session: _Optional[_Union[Session, _Mapping]] = ..., words: _Optional[_Iterable[str]] = ..., level: _Optional[str] = ...) -> None: ...
+    topic_title: str
+    topic_content: str
+    def __init__(self, session: _Optional[_Union[Session, _Mapping]] = ..., words: _Optional[_Iterable[str]] = ..., level: _Optional[str] = ..., topic_title: _Optional[str] = ..., topic_content: _Optional[str] = ...) -> None: ...
 
 class PracticeQuestion(_message.Message):
     __slots__ = ("prompt", "options", "correct_index", "explanation")
@@ -246,6 +250,72 @@ class GetWeakTopicsResponse(_message.Message):
     TOPICS_FIELD_NUMBER: _ClassVar[int]
     topics: _containers.RepeatedCompositeFieldContainer[WeakTopic]
     def __init__(self, topics: _Optional[_Iterable[_Union[WeakTopic, _Mapping]]] = ...) -> None: ...
+
+class CheckAnswersRequest(_message.Message):
+    __slots__ = ("session", "exercise_context", "answer_key", "user_answers")
+    SESSION_FIELD_NUMBER: _ClassVar[int]
+    EXERCISE_CONTEXT_FIELD_NUMBER: _ClassVar[int]
+    ANSWER_KEY_FIELD_NUMBER: _ClassVar[int]
+    USER_ANSWERS_FIELD_NUMBER: _ClassVar[int]
+    session: Session
+    exercise_context: str
+    answer_key: str
+    user_answers: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, session: _Optional[_Union[Session, _Mapping]] = ..., exercise_context: _Optional[str] = ..., answer_key: _Optional[str] = ..., user_answers: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class AnswerCheckItem(_message.Message):
+    __slots__ = ("correct", "correct_answer", "explanation")
+    CORRECT_FIELD_NUMBER: _ClassVar[int]
+    CORRECT_ANSWER_FIELD_NUMBER: _ClassVar[int]
+    EXPLANATION_FIELD_NUMBER: _ClassVar[int]
+    correct: bool
+    correct_answer: str
+    explanation: str
+    def __init__(self, correct: _Optional[bool] = ..., correct_answer: _Optional[str] = ..., explanation: _Optional[str] = ...) -> None: ...
+
+class CheckAnswersResponse(_message.Message):
+    __slots__ = ("results",)
+    RESULTS_FIELD_NUMBER: _ClassVar[int]
+    results: _containers.RepeatedCompositeFieldContainer[AnswerCheckItem]
+    def __init__(self, results: _Optional[_Iterable[_Union[AnswerCheckItem, _Mapping]]] = ...) -> None: ...
+
+class TenseDrillTopic(_message.Message):
+    __slots__ = ("title", "level", "content")
+    TITLE_FIELD_NUMBER: _ClassVar[int]
+    LEVEL_FIELD_NUMBER: _ClassVar[int]
+    CONTENT_FIELD_NUMBER: _ClassVar[int]
+    title: str
+    level: str
+    content: str
+    def __init__(self, title: _Optional[str] = ..., level: _Optional[str] = ..., content: _Optional[str] = ...) -> None: ...
+
+class GenerateTenseDrillRequest(_message.Message):
+    __slots__ = ("session", "topics", "level", "count")
+    SESSION_FIELD_NUMBER: _ClassVar[int]
+    TOPICS_FIELD_NUMBER: _ClassVar[int]
+    LEVEL_FIELD_NUMBER: _ClassVar[int]
+    COUNT_FIELD_NUMBER: _ClassVar[int]
+    session: Session
+    topics: _containers.RepeatedCompositeFieldContainer[TenseDrillTopic]
+    level: str
+    count: int
+    def __init__(self, session: _Optional[_Union[Session, _Mapping]] = ..., topics: _Optional[_Iterable[_Union[TenseDrillTopic, _Mapping]]] = ..., level: _Optional[str] = ..., count: _Optional[int] = ...) -> None: ...
+
+class TenseDrillItem(_message.Message):
+    __slots__ = ("sentence_ru", "correct_tense", "reference_translation")
+    SENTENCE_RU_FIELD_NUMBER: _ClassVar[int]
+    CORRECT_TENSE_FIELD_NUMBER: _ClassVar[int]
+    REFERENCE_TRANSLATION_FIELD_NUMBER: _ClassVar[int]
+    sentence_ru: str
+    correct_tense: str
+    reference_translation: str
+    def __init__(self, sentence_ru: _Optional[str] = ..., correct_tense: _Optional[str] = ..., reference_translation: _Optional[str] = ...) -> None: ...
+
+class GenerateTenseDrillResponse(_message.Message):
+    __slots__ = ("items",)
+    ITEMS_FIELD_NUMBER: _ClassVar[int]
+    items: _containers.RepeatedCompositeFieldContainer[TenseDrillItem]
+    def __init__(self, items: _Optional[_Iterable[_Union[TenseDrillItem, _Mapping]]] = ...) -> None: ...
 
 class WordDraft(_message.Message):
     __slots__ = ("word", "translation", "example", "transcription")
