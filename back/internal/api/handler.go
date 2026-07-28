@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"anki/internal/ai"
@@ -393,6 +394,7 @@ func (h *Handler) PracticeGenerate(c *gin.Context) {
 		h.logger.Warn("practice repetitor fallback", zap.Error(err))
 	}
 
+	time.Sleep(3 * time.Second)
 	c.JSON(http.StatusOK, buildPracticeFallback(req.Word))
 }
 

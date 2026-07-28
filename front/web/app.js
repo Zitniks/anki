@@ -2737,13 +2737,8 @@ async function fetchPracticeSet(words, level = "B1") {
 }
 
 function buildQuizMetaEl(data) {
-  const sourceLabel = data.source === "topic" ? "по теме" : data.source === "repetitor" ? "AI-репетитор" : "локальный шаблон";
-  const materialsPart = Array.isArray(data.sources) && data.sources.length > 0
-    ? ` · Материалы: ${data.sources.join(", ")}`
-    : "";
   const el = document.createElement("div");
-  el.className = "quiz-meta";
-  el.textContent = `Источник: ${sourceLabel}${materialsPart}`;
+  el.className = "quiz-meta hidden";
   return el;
 }
 
